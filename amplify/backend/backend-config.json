@@ -1,1 +1,10 @@
-{}
+{
+  "auth": {
+    "baconbits733d6d70": {
+      "service": "Cognito",
+      "providerPlugin": "awscloudformation",
+      "dependsOn": [],
+      "customAuth": false
+    }
+  }
+}
