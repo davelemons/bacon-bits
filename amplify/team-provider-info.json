@@ -1,0 +1,15 @@
+{
+  "dev": {
+    "awscloudformation": {
+      "AuthRoleName": "amplify-baconbits-dev-152907-authRole",
+      "UnauthRoleArn": "arn:aws:iam::365414534056:role/amplify-baconbits-dev-152907-unauthRole",
+      "AuthRoleArn": "arn:aws:iam::365414534056:role/amplify-baconbits-dev-152907-authRole",
+      "Region": "us-east-1",
+      "DeploymentBucketName": "amplify-baconbits-dev-152907-deployment",
+      "UnauthRoleName": "amplify-baconbits-dev-152907-unauthRole",
+      "StackName": "amplify-baconbits-dev-152907",
+      "StackId": "arn:aws:cloudformation:us-east-1:365414534056:stack/amplify-baconbits-dev-152907/0b9069f0-2b6f-11eb-971a-12704013453b",
+      "AmplifyAppId": "d1bzi7vngzspr0"
+    }
+  }
+}
