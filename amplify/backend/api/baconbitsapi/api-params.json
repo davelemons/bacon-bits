@@ -1,0 +1,42 @@
+{
+    "paths": [
+        {
+            "name": "/bits",
+            "lambdaFunction": "baconbitsapihandler",
+            "privacy": {
+                "private": true,
+                "auth": [
+                    "/POST",
+                    "/GET",
+                    "/PUT",
+                    "/PATCH",
+                    "/DELETE"
+                ]
+            },
+            "policyResourceName": "/bits"
+        }
+    ],
+    "resourceName": "baconbitsapi",
+    "apiName": "baconbitsapi",
+    "functionArns": [
+        {
+            "lambdaFunction": "baconbitsapihandler"
+        }
+    ],
+    "privacy": {
+        "auth": 1,
+        "unauth": 0,
+        "authRoleName": "amplify-baconbits-dev-93704-authRole",
+        "unAuthRoleName": "amplify-baconbits-dev-93704-unauthRole"
+    },
+    "dependsOn": [
+        {
+            "category": "function",
+            "resourceName": "baconbitsapihandler",
+            "attributes": [
+                "Name",
+                "Arn"
+            ]
+        }
+    ]
+}

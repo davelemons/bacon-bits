@@ -1,0 +1,7 @@
+{
+    "tableName": "baconbitsdynamodb",
+    "partitionKeyName": "id",
+    "partitionKeyType": "S",
+    "sortKeyName": "service",
+    "sortKeyType": "S"
+}
