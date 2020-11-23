@@ -1,0 +1,39 @@
+body,
+html,
+#root,
+.wrapper {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+}
+
+.wrapper {
+  display: flex;
+  flex-direction: column;
+}
+
+.bar-wrapper {
+  margin-top: 5px;
+}
+
+.tree-wrapper {
+  height: 500px;
+}
+
+.previous {
+  margin-left: 10px;
+}
+
+.next,
+.collapse {
+  margin-right: 10px;
+  margin-left: 5px;
+}
+
+.rst__moveHandle {
+  display: none;
+}
+
+.rst__rowContents {
+  border-left: 1px solid #bbb;
+}

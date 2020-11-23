@@ -55,6 +55,27 @@ const convertUrlType = (param, type) => {
 }
 
 /********************************
+ * HTTP Get method for get all *
+ ********************************/
+
+app.get(path, function(req, res) {
+  //TODO: this likely needs some work as eventually we will return too much.
+  let scanParams = {
+    TableName: tableName,
+  }
+
+  dynamodb.scan(scanParams, (err, data) => {
+    if (err) {
+      res.statusCode = 500;
+      res.json({error: 'Could not load items: ' + err});
+    } else {
+      res.json(data.Items);
+    }
+  });
+
+});
+
+/********************************
  * HTTP Get method for list objects *
  ********************************/
 
