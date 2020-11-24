@@ -6,6 +6,8 @@ import {AppBar, Toolbar, Grid, Paper, Typography, Button, IconButton, Container}
 import MenuIcon from '@material-ui/icons/Menu';
 import { makeStyles } from '@material-ui/core/styles';
 import Bits from './Bits';
+import MyProvider from './MyProvider';
+import MyContext from './MyContext';
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -39,6 +41,7 @@ function App() {
   }, []);
 
 return authState === AuthState.SignedIn && user ? (
+  <MyProvider>
     <div className={classes.root}>
 
       <AppBar position="static">
@@ -61,7 +64,17 @@ return authState === AuthState.SignedIn && user ? (
             </Paper>
           </Grid>
           <Grid item xs>
-            <Paper className={classes.paper}>xs</Paper>
+            <Paper className={classes.paper}>
+              <MyContext.Consumer>
+              {context => (
+                context.selectedBits.map(bit => (
+                  <div>
+                    {bit}
+                  </div>
+                ))
+              )}
+              </MyContext.Consumer>
+            </Paper>
           </Grid>
           <Grid item xs>
             <Paper className={classes.paper}>xs</Paper>
@@ -69,6 +82,7 @@ return authState === AuthState.SignedIn && user ? (
         </Grid>
       </Container>
     </div>
+  </MyProvider>
   ) : (
     <AmplifyAuthenticator>
       <AmplifySignIn slot="sign-in" hideSignUp></AmplifySignIn>

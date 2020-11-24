@@ -2,6 +2,7 @@ import React, { Component }  from 'react';
 import { API } from "aws-amplify"
 import SortableTree, { toggleExpandedForAll }  from 'react-sortable-tree';
 import 'react-sortable-tree/style.css';
+import MyContext from './MyContext';
 import './Bits.css';
 const apiName = 'baconbitsapi';
 const path = '/bits/'; 
@@ -31,9 +32,14 @@ export default class Bits extends Component {
       searchString: "",
       searchFocusIndex: -1,
       searchFoundCount: 0,
-      nodeClicked: false
+      nodeClicked: false,
+      selectedNodes:[]
     };
+
+    
   }
+
+  static contextType = MyContext;
 
   handleTreeOnChange = treeData => {
     this.setState({ treeData });
@@ -116,9 +122,10 @@ export default class Bits extends Component {
   };
 
   handleNodeClick = (node) => {
-    this.setState({
-      nodeClicked: node
-    });
+    var selectedNodes = this.state.selectedNodes;
+    selectedNodes.push(node.title);
+    const context = this.context;
+    context.setSelectedBits(selectedNodes);
   };
 
   render() {
