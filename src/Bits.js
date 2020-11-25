@@ -2,8 +2,13 @@ import React, { Component }  from 'react';
 import { API } from "aws-amplify"
 import SortableTree, { toggleExpandedForAll }  from 'react-sortable-tree';
 import 'react-sortable-tree/style.css';
-import MyContext from './MyContext';
+import { withStyles, makeStyles } from '@material-ui/core/styles';
+import Tooltip from '@material-ui/core/Tooltip';
+import BitsContext from './BitsContext';
 import './Bits.css';
+const HtmlToReactParser = require('html-to-react').Parser;
+const htmlToReactParser = new HtmlToReactParser();
+
 const apiName = 'baconbitsapi';
 const path = '/bits/'; 
 
@@ -13,12 +18,19 @@ const alertNodeInfo = ({ node, path, treeIndex }) => {
     .join(",\n   ");
 
   global.alert(
-    "Info passed to the button generator:\n\n" +
-      `node: {\n   ${objectString}\n},\n` +
-      `path: [${path.join(", ")}],\n` +
-      `treeIndex: ${treeIndex}`
+    node.data.content
   );
 };
+
+const HtmlTooltip = withStyles((theme) => ({
+  tooltip: {
+    backgroundColor: '#f5f5f9',
+    color: 'rgba(0, 0, 0, 0.87)',
+    maxWidth: 400,
+    fontSize: theme.typography.pxToRem(12),
+    border: '1px solid #dadde9'
+  }
+}))(Tooltip);
 
 export default class Bits extends Component {
   constructor(props) {
@@ -26,8 +38,8 @@ export default class Bits extends Component {
  
     this.state = {
       treeData: [
-        { title: 'Chicken', children: [{ title: 'Egg' }] },
-        { title: 'Fish', children: [{ title: 'fingerline' }] },
+        { title: 'SES', id: '1', selected: false, children: [{ title: 'SPF', id: '3',  selected: false, data: {content: "<strong>Configuring SPF in SES</strong><p><a href='https://docs.aws.amazon.com/ses/latest/DeveloperGuide/send-email-authentication-spf.html'>https://docs.aws.amazon.com/ses/latest/DeveloperGuide/send-email-authentication-spf.html</a></p>"} }] },
+        { title: 'Pinpoint', id: '2', selected: false, children: [{ title: 'Compliance & Certifications', id: '4',  selected: false, data: {content: "<strong>Pinpoint Compliance and Certifications</strong><p><a href='https://aws.amazon.com/compliance/services-in-scope'>https://aws.amazon.com/compliance/services-in-scope</a></p>"} }] },
       ],
       searchString: "",
       searchFocusIndex: -1,
@@ -39,7 +51,7 @@ export default class Bits extends Component {
     
   }
 
-  static contextType = MyContext;
+  static contextType = BitsContext;
 
   handleTreeOnChange = treeData => {
     this.setState({ treeData });
@@ -122,10 +134,25 @@ export default class Bits extends Component {
   };
 
   handleNodeClick = (node) => {
-    var selectedNodes = this.state.selectedNodes;
-    selectedNodes.push(node.title);
-    const context = this.context;
-    context.setSelectedBits(selectedNodes);
+    if(!node.children){ //No Selecting Root Nodes
+      const context = this.context;
+      var selectedBits = context.selectedBits;
+      console.log(node);
+      if (node.selected) {
+        //Remove from selected
+        selectedBits = selectedBits.filter(function(item) {
+          return item.id !== node.id;
+        });
+        node.selected = false;
+      } else {
+        //add to selected
+        selectedBits.push(node);
+        node.selected = true;
+      }
+
+      context.setSelectedBits(selectedBits);
+    }
+    
   };
 
   render() {
@@ -165,6 +192,7 @@ export default class Bits extends Component {
         <div className="tree-wrapper">
           <SortableTree
             treeData={treeData}
+            canDrag={false}
             onChange={this.handleTreeOnChange}
             searchQuery={searchString}
             searchFocusOffset={searchFocusIndex}
@@ -179,21 +207,42 @@ export default class Bits extends Component {
               const { node } = rowInfo;
               return {
                 buttons: [
-                  <button
-                    className="btn btn-outline-success"
-                    style={{
-                      verticalAlign: "middle"
-                    }}
-                    onClick={() => alertNodeInfo(rowInfo)}
+                  node.data ? (
+                  <HtmlTooltip
+                    title={
+                      <React.Fragment>
+                        {htmlToReactParser.parse(node.data.content)}
+                      </React.Fragment>
+                    }
+                    interactive
+                    arrow
+                    placement="right"
                   >
-                    ℹ
-                  </button>
+                    <button
+                      className="btn btn-outline-success"
+                      style={{
+                        verticalAlign: "middle"
+                      }}
+                      onClick={() => alertNodeInfo(rowInfo)}
+                    >
+                      ℹ
+                    </button>
+                  </HtmlTooltip>
+                  ) :
+                  (
+                    null
+                  )
                 ],
-                onClick: () => {
-                  this.handleNodeClick(node);
+                onClick: (event) => {
+                  if(event.target.className.includes('collapseButton') || event.target.className.includes('expandButton')) {
+                    // Ignore the onlick, or do something different as the (+) or (-) button has been clicked.
+                  }
+                  else {
+                    this.handleNodeClick(node);
+                  }
                 },
                 style:
-                  node === this.state.nodeClicked
+                  node.selected
                     ? {
                         border: "3px solid yellow"
                       }

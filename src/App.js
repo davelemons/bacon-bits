@@ -6,8 +6,9 @@ import {AppBar, Toolbar, Grid, Paper, Typography, Button, IconButton, Container}
 import MenuIcon from '@material-ui/icons/Menu';
 import { makeStyles } from '@material-ui/core/styles';
 import Bits from './Bits';
-import MyProvider from './MyProvider';
-import MyContext from './MyContext';
+import BitSorter from './BitSorter';
+import EmailEditor from './EmailEditor';
+import BitsProvider from './BitsProvider';
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -40,8 +41,9 @@ function App() {
       });
   }, []);
 
-return authState === AuthState.SignedIn && user ? (
-  <MyProvider>
+return authState === AuthState.SignedIn && user ? ( //TODO: remove when done testing
+//return 1===1 ? (
+  <BitsProvider>
     <div className={classes.root}>
 
       <AppBar position="static">
@@ -65,24 +67,18 @@ return authState === AuthState.SignedIn && user ? (
           </Grid>
           <Grid item xs>
             <Paper className={classes.paper}>
-              <MyContext.Consumer>
-              {context => (
-                context.selectedBits.map(bit => (
-                  <div>
-                    {bit}
-                  </div>
-                ))
-              )}
-              </MyContext.Consumer>
+              <BitSorter/>
             </Paper>
           </Grid>
           <Grid item xs>
-            <Paper className={classes.paper}>xs</Paper>
+            <Paper className={classes.paper}>
+              <EmailEditor/>
+            </Paper>
           </Grid>
         </Grid>
       </Container>
     </div>
-  </MyProvider>
+  </BitsProvider>
   ) : (
     <AmplifyAuthenticator>
       <AmplifySignIn slot="sign-in" hideSignUp></AmplifySignIn>

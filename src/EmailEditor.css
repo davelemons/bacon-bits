@@ -20,13 +20,3 @@ html,
   height: 500px;
 }
 
-.previous {
-  margin-left: 10px;
-}
-
-.next,
-.collapse {
-  margin-right: 10px;
-  margin-left: 5px;
-}
-
