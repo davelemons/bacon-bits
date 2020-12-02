@@ -16,7 +16,19 @@ html,
   margin-top: 5px;
 }
 
-.tree-wrapper {
-  height: 500px;
+.button-wrapper {
+  text-align:right;
 }
 
+.button {
+  margin-right:10px !important;
+}
+
+.editor-wrapper-class{
+  height: calc(100vh - 275px);
+}
+
+.editor-class{
+  font-size: 14px;
+  font-family: Arial, Helvetica, sans-serif;
+}

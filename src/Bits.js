@@ -3,8 +3,10 @@ import { API } from "aws-amplify"
 import SortableTree, { toggleExpandedForAll }  from 'react-sortable-tree';
 import 'react-sortable-tree/style.css';
 import { withStyles, makeStyles } from '@material-ui/core/styles';
+import { Button, TextField } from '@material-ui/core';
 import Tooltip from '@material-ui/core/Tooltip';
 import BitsContext from './BitsContext';
+import { SkipPrevious, SkipNext, ExpandLess, ExpandMore } from '@material-ui/icons';
 import './Bits.css';
 const HtmlToReactParser = require('html-to-react').Parser;
 const htmlToReactParser = new HtmlToReactParser();
@@ -38,8 +40,8 @@ export default class Bits extends Component {
  
     this.state = {
       treeData: [
-        { title: 'SES', id: '1', selected: false, children: [{ title: 'SPF', id: '3',  selected: false, data: {content: "<strong>Configuring SPF in SES</strong><p><a href='https://docs.aws.amazon.com/ses/latest/DeveloperGuide/send-email-authentication-spf.html'>https://docs.aws.amazon.com/ses/latest/DeveloperGuide/send-email-authentication-spf.html</a></p>"} }] },
-        { title: 'Pinpoint', id: '2', selected: false, children: [{ title: 'Compliance & Certifications', id: '4',  selected: false, data: {content: "<strong>Pinpoint Compliance and Certifications</strong><p><a href='https://aws.amazon.com/compliance/services-in-scope'>https://aws.amazon.com/compliance/services-in-scope</a></p>"} }] },
+        // { title: 'SES', id: '1', selected: false, children: [{ title: 'SPF', id: '3',  selected: false, data: {content: "<strong>Configuring SPF in SES</strong><p><a href='https://docs.aws.amazon.com/ses/latest/DeveloperGuide/send-email-authentication-spf.html'>https://docs.aws.amazon.com/ses/latest/DeveloperGuide/send-email-authentication-spf.html</a></p>"} }] },
+        // { title: 'Pinpoint', id: '2', selected: false, children: [{ title: 'Compliance & Certifications', id: '4',  selected: false, data: {content: "<strong>Pinpoint Compliance and Certifications</strong><p><a href='https://aws.amazon.com/compliance/services-in-scope'>https://aws.amazon.com/compliance/services-in-scope</a></p>"} }] },
       ],
       searchString: "",
       searchFocusIndex: -1,
@@ -85,13 +87,21 @@ export default class Bits extends Component {
           tempBit = {};
           tempBit.title = element.service;
           tempBit.id = element.id;
-          tempBit.data = element;
+          //tempBit.data = element;
           tempBit.children = [];
-          tempBit.children.push({title:element.category});
+          tempBit.children.push({
+            title:element.category,
+            id: element.id,
+            data: element
+          });
           newTreeData.push(tempBit)
           currService = element.service;
         } else {
-          tempBit.children.push({title:element.category});
+          tempBit.children.push({
+            title:element.category,
+            id: element.id,
+            data: element
+          });
         }
         
       });
@@ -166,28 +176,26 @@ export default class Bits extends Component {
     return (
       <div>
         <div className="bar-wrapper">
-          <label>Search: </label>
-          <input onChange={this.handleSearchOnChange} />
-          <button className="previous" onClick={this.selectPrevMatch}>
-            Previous
-          </button>
-          <button className="next" onClick={this.selectNextMatch}>
-            Next
-          </button>
+          <TextField size="small" placeholder="search" variant="outlined"  onChange={this.handleSearchOnChange} />
+          <Button variant="contained" className="previous" title="Previous Search result" onClick={this.selectPrevMatch}>
+            <SkipPrevious />
+          </Button>
+          <Button variant="contained" className="next" title="Next Search result" onClick={this.selectNextMatch}>
+            <SkipNext />
+          </Button>
           <label>
             {searchFocusIndex} / {searchFoundCount}
           </label>
-          <div>
-            <button onClick={this.toggleNodeExpansion.bind(this, true)}>
-              Expand
-            </button>
-            <button
-              className="collapse"
+
+            <Button variant="contained" className="expand" title="Expand" onClick={this.toggleNodeExpansion.bind(this, true)}>
+              <ExpandMore />
+            </Button>
+            <Button
+              className="collapse" variant="contained" title="Collapse" 
               onClick={this.toggleNodeExpansion.bind(this, false)}
             >
-              Collapse
-            </button>
-          </ div>
+              <ExpandLess />
+            </Button>
         </div>
         <div className="tree-wrapper">
           <SortableTree

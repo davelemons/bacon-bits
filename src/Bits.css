@@ -10,6 +10,7 @@ html,
 .wrapper {
   display: flex;
   flex-direction: column;
+  height: 100%;
 }
 
 .bar-wrapper {
@@ -17,16 +18,24 @@ html,
 }
 
 .tree-wrapper {
-  height: 500px;
-}
-
-.previous {
-  margin-left: 10px;
+  height: calc(100vh - 200px);
 }
 
 .next,
-.collapse {
-  margin-right: 10px;
-  margin-left: 5px;
+.previous {
+  margin-right: 5px !important;
+  margin-left: 5px !important;
+  padding-right: 0 !important;
+  padding-left: 0 !important;
+  min-width: 40px !important;
+}
+
+.collapse,
+.expand {
+
+  margin-left: 10px !important;
+  padding-right: 0 !important;
+  padding-left: 0 !important;
+  min-width: 40px !important;
 }
 
