@@ -66,7 +66,7 @@ class EmailEditor extends Component {
         });
       }
     );
-
+ 
     // this.props.addNotification({
     //   message: 'Copied Markdown to Clipboard',
     //   level: 'success',
