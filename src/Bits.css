@@ -31,11 +31,17 @@ html,
 }
 
 .collapse,
+.addBit,
 .expand {
 
   margin-left: 10px !important;
   padding-right: 0 !important;
   padding-left: 0 !important;
   min-width: 40px !important;
+}
+
+.formControl{
+  min-width:565px !important;
+  margin-top:10px !important;
 }
 

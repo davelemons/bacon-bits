@@ -50,7 +50,7 @@ const convertUrlType = (param, type) => {
     case "N":
       return Number.parseInt(param);
     default:
-      return param;
+      return decodeURI(param);
   }
 }
 
@@ -73,6 +73,14 @@ app.get(path, function(req, res) {
     }
   });
 
+});
+
+/*****************************************
+ * HTTP Get method for get service list *
+ *****************************************/
+
+app.get(path + '/services', function(req, res) {
+  res.json(["PINPOINT","SES","CONNECT","SNS","COGNITO"]); //TODO pull this from DynamoDB
 });
 
 /********************************
@@ -141,6 +149,8 @@ app.get(path + '/object' + hashKeyPath + sortKeyPath, function(req, res) {
     TableName: tableName,
     Key: params
   }
+
+  console.log(getItemParams);
 
   dynamodb.get(getItemParams,(err, data) => {
     if(err) {

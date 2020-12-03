@@ -5,8 +5,10 @@ import { withStyles, makeStyles } from '@material-ui/core/styles';
 import Tooltip from '@material-ui/core/Tooltip';
 import BitsContext from './BitsContext';
 import './BitSorter.css';
+import { Info } from '@material-ui/icons';
 const HtmlToReactParser = require('html-to-react').Parser;
 const htmlToReactParser = new HtmlToReactParser();
+
 
 const HtmlTooltip = withStyles((theme) => ({
   tooltip: {
@@ -62,10 +64,11 @@ export default class BitSorter extends Component {
                     <button
                       className="btn btn-outline-success"
                       style={{
-                        verticalAlign: "middle"
+                        verticalAlign: "middle",
+                        marginLeft: "5px"
                       }}
                     >
-                      ℹ
+                      <Info fontSize="small" color="primary"/>
                     </button>
                   </HtmlTooltip>
                   ) :

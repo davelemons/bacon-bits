@@ -2,7 +2,7 @@ import React from 'react';
 import './App.css';
 import { AmplifyAuthenticator, AmplifySignIn } from '@aws-amplify/ui-react';
 import { AuthState, onAuthUIStateChange } from '@aws-amplify/ui-components';
-import {AppBar, Toolbar, Grid, Paper, Typography, Button, IconButton, Container} from '@material-ui/core';
+import {AppBar, Toolbar, Grid, Paper, Typography, Button, Backdrop, CircularProgress, Container} from '@material-ui/core';
 import MenuIcon from '@material-ui/icons/Menu';
 import { makeStyles } from '@material-ui/core/styles';
 import Bits from './Bits';
@@ -29,6 +29,10 @@ const useStyles = makeStyles((theme) => ({
   },
   container: {
     paddingTop: '10px',
+  },
+  backdrop: {
+    zIndex: theme.zIndex.drawer + 1,
+    color: '#fff',
   }
 }));
 
@@ -37,8 +41,14 @@ const useStyles = makeStyles((theme) => ({
 function App() {
   const classes = useStyles();
   const [authState, setAuthState] = React.useState();
-  const [user, setUser] = React.useState();
+  const [user, setUser, open, setOpen] = React.useState();
   const notificationSystem = React.createRef();
+  const handleClose = () => {
+    setOpen(false);
+  };
+  const handleToggle = () => {
+    setOpen(!open);
+  };
 
   React.useEffect(() => {
       return onAuthUIStateChange((nextAuthState, authData) => {
@@ -66,11 +76,11 @@ function App() {
   <BitsProvider>
     <div className={classes.root}>
     <NotificationSystem ref={notificationSystem} />
+      <Backdrop className={classes.backdrop} open={open} onClick={handleClose}>
+        <CircularProgress color="inherit" />
+      </Backdrop>
       <AppBar position="static">
         <Toolbar>
-          <IconButton edge="start" className={classes.menuButton} color="inherit" aria-label="menu">
-            <MenuIcon />
-          </IconButton>
           <Typography variant="h6" className={classes.title}>
             Bacon Bits
           </Typography>
@@ -82,7 +92,7 @@ function App() {
         <Grid container spacing={3}>
           <Grid item xs>
             <Paper className={classes.paper}>
-              <Bits />
+              <Bits hideLoader={handleClose}/>
             </Paper>
           </Grid>
           <Grid item xs>
