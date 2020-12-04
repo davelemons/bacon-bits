@@ -9,8 +9,11 @@ import MuiDialogContent from '@material-ui/core/DialogContent';
 import MuiDialogActions from '@material-ui/core/DialogActions';
 import Tooltip from '@material-ui/core/Tooltip';
 import BitsContext from './BitsContext';
-import { SkipPrevious, SkipNext, ExpandLess, ExpandMore, Settings, Info, Add, Close } from '@material-ui/icons';
+import BitEditor from './BitEditor';
+import { SkipPrevious, SkipNext, ExpandLess, ExpandMore, Settings, Info, Add, Close, Delete } from '@material-ui/icons';
 import './Bits.css';
+import draftToHtml from 'draftjs-to-html';
+import { convertToRaw } from 'draft-js';
 const HtmlToReactParser = require('html-to-react').Parser;
 const htmlToReactParser = new HtmlToReactParser();
 
@@ -72,8 +75,8 @@ export default class Bits extends Component {
  
     this.state = {
       treeData: [
-        { title: 'SES', id: '1', selected: false, children: [{ title: 'SPF', id: '3',  selected: false, data: {content: "<strong>Configuring SPF in SES</strong><p><a href='https://docs.aws.amazon.com/ses/latest/DeveloperGuide/send-email-authentication-spf.html'>https://docs.aws.amazon.com/ses/latest/DeveloperGuide/send-email-authentication-spf.html</a></p>"} }] },
-        { title: 'Pinpoint', id: '2', selected: false, children: [{ title: 'Compliance & Certifications', id: '4',  selected: false, data: {content: "<strong>Pinpoint Compliance and Certifications</strong><p><a href='https://aws.amazon.com/compliance/services-in-scope'>https://aws.amazon.com/compliance/services-in-scope</a></p>"} }] },
+        // { title: 'SES', id: '1', selected: false, children: [{ title: 'SPF', id: '3',  selected: false, data: {content: "<strong>Configuring SPF in SES</strong><p><a href='https://docs.aws.amazon.com/ses/latest/DeveloperGuide/send-email-authentication-spf.html'>https://docs.aws.amazon.com/ses/latest/DeveloperGuide/send-email-authentication-spf.html</a></p>"} }] },
+        // { title: 'Pinpoint', id: '2', selected: false, children: [{ title: 'Compliance & Certifications', id: '4',  selected: false, data: {content: "<strong>Pinpoint Compliance and Certifications</strong><p><a href='https://aws.amazon.com/compliance/services-in-scope'>https://aws.amazon.com/compliance/services-in-scope</a></p>"} }] },
       ],
       searchString: "",
       searchFocusIndex: 0,
@@ -87,7 +90,9 @@ export default class Bits extends Component {
         category: '',
         name: '',
         content:''
-      }
+      },
+      adding: false,
+      editing: false
     };
   }
   
@@ -106,11 +111,15 @@ export default class Bits extends Component {
 
   handleModalClose = e => {
     this.setState({
-      open: false
+      open: false,
+      editing: false,
+      adding: false
     });
+    this.context.clearBitEditorState();
   };
 
-  componentDidMount() {
+  fetchBits = () => {
+    this.props.toggleLoader();
     API
     .get(apiName, '/bits/')
     .then(response => {
@@ -156,10 +165,15 @@ export default class Bits extends Component {
       this.setState({
         treeData: newTreeData
       });
+      this.props.toggleLoader();
     })
     .catch(error => {
       console.log(error);
     });
+  }
+
+  componentDidMount() {
+    this.fetchBits()
 
     API
     .get(apiName, '/bits/services/')
@@ -204,19 +218,30 @@ export default class Bits extends Component {
 
   handleSettingsClick = (node) => {
     console.log('Dave',node);
+    var self = this;
+
+    this.props.toggleLoader();
 
     API
     .get(apiName, `/bits/object/${node.node.id}/${node.node.service}`)
     .then(response => {
       console.log(response);
+      this.context.setBitEditorStateFromHTML(response.content);
       this.setState({
         currBit: response,
         modalTitle: "Edit Bacon Bit",
+        editing: true,
         open: true
       });
+      this.props.toggleLoader();
     })
     .catch(error => {
       console.log(error);
+      self.props.addNotification({
+        message: 'Error fetching Bit...Check Console',
+        level: 'error'
+      });
+      this.props.toggleLoader();
     });
   };
 
@@ -233,6 +258,7 @@ export default class Bits extends Component {
     console.log('handleCategoryChange',event.target.value);
     var currBit = this.state.currBit;
     currBit.category = event.target.value
+    currBit.name = event.target.value //TODO need to fix categories
     this.setState({
       currBit
     });
@@ -241,7 +267,7 @@ export default class Bits extends Component {
   handleTitleChange = (event) => {
     console.log('handleTitleChange',event.target.value);
     var currBit = this.state.currBit;
-    currBit.title = event.target.value
+    currBit.name = event.target.value
     this.setState({
       currBit
     });
@@ -249,8 +275,10 @@ export default class Bits extends Component {
 
   handleAddClick = () => {
     console.log('Add Bit');
+    this.context.clearBitEditorState();
     this.setState({
       modalTitle: "New Bacon Bit",
+      adding: true,
       open: true,
       currBit:{
         service: '',
@@ -259,6 +287,88 @@ export default class Bits extends Component {
         content:''
       }
     });
+  };
+
+  handleDeleteClick = (node) => {
+    console.log('Delete Bit');
+    var self = this;
+
+    this.props.addNotification({
+    message: 'Are you sure you want to delete this Bacon Bit?',
+    level: 'warning',
+    action: {
+        label: 'OK',
+        callback: function() {
+          self.handleDeleteConfirmClick(node);
+        }
+      }
+    });
+  };
+
+  handleDeleteConfirmClick = (node) => {
+    console.log('Delete Confirmed!', node);
+    var self = this;
+    API
+      .del(apiName, `/bits/object/${node.node.id}/${node.node.service}`)
+      .then(response => {
+        this.props.toggleLoader();
+        this.fetchBits();
+        self.props.addNotification({
+          message: 'Bit Deleted',
+          level: 'success'
+        });
+      })
+      .catch(error => {
+        console.log(error);
+        self.props.addNotification({
+          message: 'Error deleting Bit...Check Console',
+          level: 'error'
+        });
+        this.props.toggleLoader();
+      });
+  }
+
+  handleModalSave = () => {
+    this.props.toggleLoader();
+    var self = this;
+    const rawContentState = convertToRaw(this.context.bitEditorState.getCurrentContent());
+    const html = draftToHtml(rawContentState);
+    console.log(html);
+
+    var currBit = this.state.currBit
+
+    currBit.content = html
+
+      API
+      .put(apiName, `/bits/`, {body: currBit})
+      .then(response => {
+        this.setState({
+          open: false,
+          editing: false,
+          adding: false
+        });
+        this.props.toggleLoader();
+        this.fetchBits()
+        self.props.addNotification({
+          message: 'Bit Saved!',
+          level: 'success'
+        });
+      })
+      .catch(error => {
+        console.log(error);
+        this.setState({
+          open: false,
+          editing: false,
+          adding: false
+        });
+        this.props.toggleLoader();
+        self.props.addNotification({
+          message: 'Error saving Bit...Check Console',
+          level: 'error'
+        });
+      });
+
+
   };
 
   handleNodeClick = (node) => {
@@ -355,9 +465,20 @@ export default class Bits extends Component {
                     <div>
                       <button
                         className="btn btn-outline-success"
-                        title="Edit Bacon Bit"
+                        title="Delete Bacon Bit"
                         style={{
                           verticalAlign: "middle"
+                        }}
+                        onClick={() => this.handleDeleteClick(rowInfo)}
+                      >
+                        <Delete fontSize="small" color="error"/>
+                      </button>
+                      <button
+                        className="btn btn-outline-success"
+                        title="Edit Bacon Bit"
+                        style={{
+                          verticalAlign: "middle",
+                          marginLeft: "5px"
                         }}
                         onClick={() => this.handleSettingsClick(rowInfo)}
                       >
@@ -424,11 +545,12 @@ export default class Bits extends Component {
                 {services}
               </Select>
             </FormControl>
-            <TextField className="formControl" id="input-category" label="Category" value={currBit.category} onChange={this.handleCategoryChange} />
-            <TextField className="formControl" id="input-title" label="Title" value={currBit.name} onChange={this.handleTitleChange} />
+            <TextField className="formControl" id="input-category" label="Title" value={currBit.category} onChange={this.handleCategoryChange} />
+            {/* <TextField className="formControl" id="input-title" label="Title" value={currBit.name} onChange={this.handleTitleChange} /> */}
+            <BitEditor/>
           </DialogContent>
           <DialogActions>
-            <Button autoFocus onClick={this.handleModalClose} color="primary">
+            <Button autoFocus onClick={this.handleModalSave} color="primary">
               Save changes
             </Button>
           </DialogActions>

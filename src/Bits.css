@@ -21,6 +21,10 @@ html,
   height: calc(100vh - 200px);
 }
 
+.bitsorter-tree-wrapper {
+  height: calc(100vh - 200px);
+}
+
 .next,
 .previous {
   margin-right: 5px !important;

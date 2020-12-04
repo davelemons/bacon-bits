@@ -7,7 +7,8 @@ class BitsProvider extends Component {
     state = {
         selectedBits: [],
         sortedBits: [],
-        editorState: EditorState.createEmpty()
+        editorState: EditorState.createEmpty(),
+        bitEditorState: EditorState.createEmpty()
     };
 
     render() {
@@ -17,11 +18,13 @@ class BitsProvider extends Component {
                     selectedBits: this.state.selectedBits,
                     sortedBits: this.state.sortedBits,
                     editorState: this.state.editorState,
+                    bitEditorState: this.state.bitEditorState,
                     setSelectedBits: (selectedBits) => {
                       //Build Editor HTML
                       var content = '';
                       selectedBits.forEach(bit => {
-                          if(bit.data && bit.data.content) content += '<p>' + bit.data.content + '</p>'
+                          if(bit.data && bit.data.content) content += '<p>' + bit.data.content + '</p>';
+                          bit.subtitle = bit.data.service;
                       });
                       const blocksFromHtml = htmlToDraft(content);
                       const { contentBlocks, entityMap } = blocksFromHtml;
@@ -29,12 +32,31 @@ class BitsProvider extends Component {
                       const editorState = EditorState.createWithContent(contentState);
                       this.setState({
                         selectedBits,
-                          editorState
+                        editorState
                       });
                     },
                     setEditorState: (editorState) => {
                         this.setState({
                             editorState
+                        });
+                    },
+                    setBitEditorState: (bitEditorState) => {
+                        this.setState({
+                            bitEditorState
+                        });
+                    },
+                    setBitEditorStateFromHTML:(html) => {
+                        const blocksFromHtml = htmlToDraft(html);
+                        const { contentBlocks, entityMap } = blocksFromHtml;
+                        const contentState = ContentState.createFromBlockArray(contentBlocks, entityMap);
+                        const bitEditorState = EditorState.createWithContent(contentState);
+                        this.setState({
+                          bitEditorState
+                        });
+                    },
+                    clearBitEditorState:() => {
+                        this.setState({
+                          bitEditorState: EditorState.createEmpty()
                         });
                     }
                 }}

@@ -16,4 +16,6 @@ html,
   margin-top: 5px;
 }
 
-
+.bitsorter-tree-wrapper .rst__nodeContent{
+  min-width:90%;
+}

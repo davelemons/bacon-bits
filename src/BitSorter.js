@@ -42,7 +42,7 @@ export default class BitSorter extends Component {
 
     return (
       <div>
-        <div className="tree-wrapper">
+        <div className="bitsorter-tree-wrapper">
           <SortableTree
             treeData={this.context.selectedBits}
             onChange={this.handleTreeOnChange}

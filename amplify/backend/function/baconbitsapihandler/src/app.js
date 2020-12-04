@@ -8,6 +8,7 @@ See the License for the specific language governing permissions and limitations 
 
 
 
+const { v4: uuidv4 } = require('uuid');
 const AWS = require('aws-sdk')
 var awsServerlessExpressMiddleware = require('aws-serverless-express/middleware')
 var bodyParser = require('body-parser')
@@ -16,6 +17,7 @@ var express = require('express')
 AWS.config.update({ region: process.env.TABLE_REGION });
 
 const dynamodb = new AWS.DynamoDB.DocumentClient();
+
 
 let tableName = "baconbitsdynamodb";
 if(process.env.ENV && process.env.ENV !== "NONE") {
@@ -177,6 +179,9 @@ app.put(path, function(req, res) {
     req.body['userId'] = req.apiGateway.event.requestContext.identity.cognitoIdentityId || UNAUTH;
   }
 
+  //must be new item so set GUID
+  if (!req.body.id) req.body.id = uuidv4();
+
   let putItemParams = {
     TableName: tableName,
     Item: req.body
@@ -200,6 +205,9 @@ app.post(path, function(req, res) {
   if (userIdPresent) {
     req.body['userId'] = req.apiGateway.event.requestContext.identity.cognitoIdentityId || UNAUTH;
   }
+
+  //must be new item so set GUID
+  if (!req.body.id) req.body.id = uuidv4();
 
   let putItemParams = {
     TableName: tableName,

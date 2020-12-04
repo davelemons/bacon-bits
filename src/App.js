@@ -41,7 +41,8 @@ const useStyles = makeStyles((theme) => ({
 function App() {
   const classes = useStyles();
   const [authState, setAuthState] = React.useState();
-  const [user, setUser, open, setOpen] = React.useState();
+  const [user, setUser] = React.useState();
+  const [open, setOpen] = React.useState();
   const notificationSystem = React.createRef();
   const handleClose = () => {
     setOpen(false);
@@ -92,7 +93,7 @@ function App() {
         <Grid container spacing={3}>
           <Grid item xs>
             <Paper className={classes.paper}>
-              <Bits hideLoader={handleClose}/>
+              <Bits hideLoader={handleClose} toggleLoader={handleToggle} addNotification={addNotification}/>
             </Paper>
           </Grid>
           <Grid item xs>
