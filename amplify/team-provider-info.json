@@ -16,5 +16,26 @@
         "baconbits3f66546a": {}
       }
     }
+  },
+  "prod": {
+    "awscloudformation": {
+      "AuthRoleName": "amplify-baconbits-prod-145007-authRole",
+      "UnauthRoleArn": "arn:aws:iam::365414534056:role/amplify-baconbits-prod-145007-unauthRole",
+      "AuthRoleArn": "arn:aws:iam::365414534056:role/amplify-baconbits-prod-145007-authRole",
+      "Region": "us-east-1",
+      "DeploymentBucketName": "amplify-baconbits-prod-145007-deployment",
+      "UnauthRoleName": "amplify-baconbits-prod-145007-unauthRole",
+      "StackName": "amplify-baconbits-prod-145007",
+      "StackId": "arn:aws:cloudformation:us-east-1:365414534056:stack/amplify-baconbits-prod-145007/e8b59a60-3b20-11eb-a3c1-12cad4668dfd",
+      "AmplifyAppId": "d1ww011i340la2"
+    },
+    "categories": {
+      "auth": {
+        "baconbits3f66546a": {}
+      },
+      "function": {
+        "baconbitsapihandler": {}
+      }
+    }
   }
 }
