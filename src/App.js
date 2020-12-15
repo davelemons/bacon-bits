@@ -3,7 +3,6 @@ import './App.css';
 import { AmplifyAuthenticator, AmplifySignIn } from '@aws-amplify/ui-react';
 import { AuthState, onAuthUIStateChange } from '@aws-amplify/ui-components';
 import {AppBar, Toolbar, Grid, Paper, Typography, Button, Backdrop, CircularProgress, Container} from '@material-ui/core';
-import MenuIcon from '@material-ui/icons/Menu';
 import { makeStyles } from '@material-ui/core/styles';
 import Bits from './Bits';
 import BitSorter from './BitSorter';
@@ -90,18 +89,18 @@ function App() {
       </AppBar>
       {/* <div>Hello, {user.username}</div> */}
       <Container className={classes.container} maxWidth="xl">
-        <Grid container spacing={3}>
-          <Grid item xs>
+        <Grid container spacing={1}>
+          <Grid item xs={5}>
             <Paper className={classes.paper}>
               <Bits hideLoader={handleClose} toggleLoader={handleToggle} addNotification={addNotification}/>
             </Paper>
           </Grid>
-          <Grid item xs>
+          <Grid item xs={4}>
             <Paper className={classes.paper}>
               <BitSorter/>
             </Paper>
           </Grid>
-          <Grid item xs>
+          <Grid item xs={3}>
             <Paper className={classes.paper}>
               <EmailEditor addNotification={addNotification}/>
             </Paper>

@@ -49,3 +49,9 @@ html,
   margin-top:10px !important;
 }
 
+.rstcustom__node {
+  height: unset !important;
+  position: relative !important;
+  top: unset !important;
+}
+

@@ -24,7 +24,7 @@ class BitsProvider extends Component {
                       var content = '';
                       selectedBits.forEach(bit => {
                           if(bit.data && bit.data.content) content += '<p>' + bit.data.content + '</p>';
-                          bit.subtitle = bit.data.service;
+                          bit.subtitle = `${bit.data.service} - ${bit.data.category}`;
                       });
                       const blocksFromHtml = htmlToDraft(content);
                       const { contentBlocks, entityMap } = blocksFromHtml;

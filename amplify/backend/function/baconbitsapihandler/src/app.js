@@ -77,14 +77,6 @@ app.get(path, function(req, res) {
 
 });
 
-/*****************************************
- * HTTP Get method for get service list *
- *****************************************/
-
-app.get(path + '/services', function(req, res) {
-  res.json(["PINPOINT","SES","CONNECT","SNS","COGNITO"]); //TODO pull this from DynamoDB
-});
-
 /********************************
  * HTTP Get method for list objects *
  ********************************/
