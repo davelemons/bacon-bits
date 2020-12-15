@@ -76,13 +76,8 @@
         "Layers": [],
         "Timeout": "25",
         "Code": {
-<<<<<<< HEAD
           "S3Bucket": "amplify-baconbits-prod-145007-deployment",
-          "S3Key": "amplify-builds/baconbitsapihandler-54744f504c6771694278-build.zip"
-=======
-          "S3Bucket": "amplify-baconbits-dev-93704-deployment",
           "S3Key": "amplify-builds/baconbitsapihandler-567a634738466c6f4866-build.zip"
->>>>>>> dev
         }
       }
     },
