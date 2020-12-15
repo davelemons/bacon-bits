@@ -4,6 +4,7 @@ import SortableTree, { toggleExpandedForAll }  from 'react-sortable-tree';
 import 'react-sortable-tree/style.css';
 import { withStyles, makeStyles } from '@material-ui/core/styles';
 import { Button, TextField, Dialog, Typography, IconButton, InputLabel, FormControl, Select, MenuItem  } from '@material-ui/core';
+import Autocomplete, { createFilterOptions } from '@material-ui/lab/Autocomplete';
 import MuiDialogTitle from '@material-ui/core/DialogTitle';
 import MuiDialogContent from '@material-ui/core/DialogContent';
 import MuiDialogActions from '@material-ui/core/DialogActions';
@@ -14,8 +15,10 @@ import { SkipPrevious, SkipNext, ExpandLess, ExpandMore, Settings, Info, Add, Cl
 import './Bits.css';
 import draftToHtml from 'draftjs-to-html';
 import { convertToRaw } from 'draft-js';
+var _ = require('lodash');
 const HtmlToReactParser = require('html-to-react').Parser;
 const htmlToReactParser = new HtmlToReactParser();
+const filter = createFilterOptions();
 
 const apiName = 'baconbitsapi';
 
@@ -92,7 +95,8 @@ export default class Bits extends Component {
         content:''
       },
       adding: false,
-      editing: false
+      editing: false,
+      categories: [{title: '2-WAY SMS'},{title: 'COMPLIANCE'}]
     };
   }
   
@@ -125,45 +129,63 @@ export default class Bits extends Component {
     .then(response => {
       console.log(response);
 
-      //Sort
+      //Sort and Group...TODO: this is gross...but it works.
       var bits = response;
+      
+      var tree = [];
       bits.sort((a, b) => (a.service > b.service) ? 1 : (a.service === b.service) ? ((a.category > b.category) ? 1 : -1) : -1 );
-      console.log(bits);
+      
+      
+      //Get Unique Services
+      var services = []
+      var tempServices = _.uniq(_.map(bits, 'service'))
+      tempServices.forEach(service => {
+        services.push({title: service.toUpperCase()});
+      })
 
-      var newTreeData = [];
-      var currService = '';
-      var tempBit = {};
+      //Get Unique Categories
+      var categories = []
+      var tempCategories = _.uniq(_.map(bits, 'category'))
+      tempCategories.forEach(category => {
+        categories.push({title: category.toUpperCase()});
+      })
 
-      bits.forEach(element => {
-        if(element.service !== currService){
-          //New Service
-          
-          tempBit = {};
-          tempBit.title = element.service;
-          tempBit.id = element.id;
-          //tempBit.data = element;
-          tempBit.children = [];
-          tempBit.children.push({
-            title:element.category,
-            service: element.service,
-            id: element.id,
-            data: element
-          });
-          newTreeData.push(tempBit)
-          currService = element.service;
-        } else {
-          tempBit.children.push({
-            title:element.category,
-            service: element.service,
-            id: element.id,
-            data: element
-          });
+      
+      var serviceList = _.groupBy(bits, 'service');
+      
+      for (var property in serviceList) {
+        var serviceNode = {}
+        serviceNode.title = property;
+        serviceNode.children = [];
+        if (serviceList.hasOwnProperty(property)) {
+          var children = _.groupBy(serviceList[property], 'category');
+          for (var property2 in children) {
+            var categoryNode = {};
+            categoryNode.title = property2
+            categoryNode.children = [];
+            if (children.hasOwnProperty(property2)) {
+              var items = children[property2]
+              items.forEach(element => {
+                categoryNode.children.push({
+                  title:element.name,
+                  service: element.service,
+                  subtitle:`${element.service} - ${element.category}`,
+                  id: element.id,
+                  data: element
+                });
+              })
+
+            }
+            serviceNode.children.push(categoryNode);
+          }
         }
-        
-      });
-      console.log(newTreeData);
+        tree.push(serviceNode);
+      }
+      
       this.setState({
-        treeData: newTreeData
+        treeData: tree,
+        services: services,
+        categories: categories
       });
       this.props.toggleLoader();
     })
@@ -175,17 +197,17 @@ export default class Bits extends Component {
   componentDidMount() {
     this.fetchBits()
 
-    API
-    .get(apiName, '/bits/services/')
-    .then(response => {
-      console.log(response);
-      this.setState({
-        services: response,
-      });
-    })
-    .catch(error => {
-      console.log(error);
-    });
+    // API
+    // .get(apiName, '/bits/services/')
+    // .then(response => {
+    //   console.log(response);
+    //   this.setState({
+    //     services: response,
+    //   });
+    // })
+    // .catch(error => {
+    //   console.log(error);
+    // });
   }
 
   selectPrevMatch = () => {
@@ -246,7 +268,7 @@ export default class Bits extends Component {
   };
 
   handleServiceChange = (event) => {
-    console.log('handleServiceChange',event.target.value);
+    //console.log('handleServiceChange',event.target.value);
     var currBit = this.state.currBit;
     currBit.service = event.target.value
     this.setState({
@@ -254,18 +276,50 @@ export default class Bits extends Component {
     });
   };
 
+  handleService2Change = (event, newValue) => {
+    var tempValue = ''
+    if (typeof newValue === 'string') {
+      tempValue = newValue
+    } else if (newValue && newValue.inputValue) {
+      tempValue = newValue.inputValue
+    } else if (newValue && newValue.title) {
+      tempValue = newValue.title
+    }
+    console.log('New Service: ',tempValue)
+    var currBit = this.state.currBit;
+    currBit.service = tempValue.toUpperCase();
+    this.setState({
+      currBit
+    });
+  };
   handleCategoryChange = (event) => {
-    console.log('handleCategoryChange',event.target.value);
+    //console.log('handleCategoryChange',event.target.value);
     var currBit = this.state.currBit;
     currBit.category = event.target.value
-    currBit.name = event.target.value //TODO need to fix categories
+    this.setState({
+      currBit
+    });
+  };
+
+  handleCategory2Change = (event, newValue) => {
+    var tempValue = ''
+    if (typeof newValue === 'string') {
+      tempValue = newValue
+    } else if (newValue && newValue.inputValue) {
+      tempValue = newValue.inputValue
+    } else if (newValue && newValue.title) {
+      tempValue = newValue.title
+    }
+    console.log('New Category: ',tempValue)
+    var currBit = this.state.currBit;
+    currBit.category = tempValue.toUpperCase();
     this.setState({
       currBit
     });
   };
 
   handleTitleChange = (event) => {
-    console.log('handleTitleChange',event.target.value);
+    //console.log('handleTitleChange',event.target.value);
     var currBit = this.state.currBit;
     currBit.name = event.target.value
     this.setState({
@@ -307,6 +361,7 @@ export default class Bits extends Component {
 
   handleDeleteConfirmClick = (node) => {
     console.log('Delete Confirmed!', node);
+    this.props.toggleLoader();
     var self = this;
     API
       .del(apiName, `/bits/object/${node.node.id}/${node.node.service}`)
@@ -401,7 +456,9 @@ export default class Bits extends Component {
       searchFoundCount,
       open,
       modalTitle,
-      currBit
+      currBit,
+      categories,
+      services
     } = this.state;
 
     const customSearchMethod = ({  node, path, treeIndex, searchQuery }) => {
@@ -412,9 +469,9 @@ export default class Bits extends Component {
       node.data.content.toLowerCase().indexOf(searchQuery.toLowerCase()) > -1);
     }
 
-    const services = this.state.services.map((service) =>
-        <MenuItem value={service}>{service}</MenuItem>
-    );
+    // const services = this.state.services.map((service) =>
+    //     <MenuItem value={service}>{service}</MenuItem>
+    // );
     
     return (
       <div>
@@ -534,7 +591,7 @@ export default class Bits extends Component {
             {modalTitle}
           </DialogTitle>
           <DialogContent dividers>
-            <FormControl className="formControl">
+            {/* <FormControl className="formControl">
               <InputLabel id="demo-simple-select-label">Service</InputLabel>
               <Select
                 labelId="demo-simple-select-label"
@@ -544,9 +601,91 @@ export default class Bits extends Component {
               >
                 {services}
               </Select>
-            </FormControl>
-            <TextField className="formControl" id="input-category" label="Title" value={currBit.category} onChange={this.handleCategoryChange} />
-            {/* <TextField className="formControl" id="input-title" label="Title" value={currBit.name} onChange={this.handleTitleChange} /> */}
+            </FormControl> */}
+
+            <Autocomplete
+              value={currBit.service}
+              onChange={this.handleService2Change}
+              filterOptions={(options, params) => {
+                const filtered = filter(options, params);
+
+                // Suggest the creation of a new value
+                if (params.inputValue !== '') {
+                  filtered.push({
+                    inputValue: params.inputValue,
+                    title: `Add "${params.inputValue}"`,
+                  });
+                }
+
+                return filtered;
+              }}
+              selectOnFocus
+              clearOnBlur
+              handleHomeEndKeys
+              id="service-autocomplete"
+              options={services}
+              getOptionLabel={(option) => {
+                // Value selected with enter, right from the input
+                if (typeof option === 'string') {
+                  return option;
+                }
+                // Add "xxx" option created dynamically
+                if (option.inputValue) {
+                  return option.inputValue;
+                }
+                // Regular option
+                return option.title;
+              }}
+              renderOption={(option) => option.title}
+              freeSolo
+              renderInput={(params) => (
+                <TextField {...params} label="Service" />
+              )}
+            />
+
+            {/* <TextField className="formControl" id="input-category" label="Category" value={currBit.category} onChange={this.handleCategoryChange} /> */}
+            
+            <Autocomplete
+              value={currBit.category}
+              onChange={this.handleCategory2Change}
+              filterOptions={(options, params) => {
+                const filtered = filter(options, params);
+
+                // Suggest the creation of a new value
+                if (params.inputValue !== '') {
+                  filtered.push({
+                    inputValue: params.inputValue,
+                    title: `Add "${params.inputValue}"`,
+                  });
+                }
+
+                return filtered;
+              }}
+              selectOnFocus
+              clearOnBlur
+              handleHomeEndKeys
+              id="free-solo-with-text-demo"
+              options={categories}
+              getOptionLabel={(option) => {
+                // Value selected with enter, right from the input
+                if (typeof option === 'string') {
+                  return option;
+                }
+                // Add "xxx" option created dynamically
+                if (option.inputValue) {
+                  return option.inputValue;
+                }
+                // Regular option
+                return option.title;
+              }}
+              renderOption={(option) => option.title}
+              freeSolo
+              renderInput={(params) => (
+                <TextField {...params} label="Category" />
+              )}
+            />
+            
+            <TextField className="formControl" id="input-title" label="Title" value={currBit.name} onChange={this.handleTitleChange} />
             <BitEditor/>
           </DialogContent>
           <DialogActions>
