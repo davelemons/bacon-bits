@@ -23,7 +23,7 @@ class BitsProvider extends Component {
                       //Build Editor HTML
                       var content = '';
                       selectedBits.forEach(bit => {
-                          if(bit.data && bit.data.content) content += '<p>' + bit.data.content + '</p>';
+                          if(bit.data && bit.data.content) content += '' + bit.data.content + '<p></p>';
                           bit.subtitle = `${bit.data.service} - ${bit.data.category}`;
                       });
                       const blocksFromHtml = htmlToDraft(content);
