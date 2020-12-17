@@ -8,7 +8,11 @@ class BitsProvider extends Component {
         selectedBits: [],
         sortedBits: [],
         editorState: EditorState.createEmpty(),
-        bitEditorState: EditorState.createEmpty()
+        bitEditorState: EditorState.createEmpty(),
+        user: {},
+        alias: '',
+        groups: [],
+        isAdmin: false
     };
 
     render() {
@@ -19,6 +23,10 @@ class BitsProvider extends Component {
                     sortedBits: this.state.sortedBits,
                     editorState: this.state.editorState,
                     bitEditorState: this.state.bitEditorState,
+                    user: this.state.user,
+                    alias: this.state.alias,
+                    groups: this.state.groups,
+                    isAdmin: this.state.isAdmin,
                     setSelectedBits: (selectedBits) => {
                       //Build Editor HTML
                       var content = '';
@@ -58,7 +66,25 @@ class BitsProvider extends Component {
                         this.setState({
                           bitEditorState: EditorState.createEmpty()
                         });
-                    }
+                    },
+                    setUser: (cognitoUser) => {
+                        var user = cognitoUser.attributes.email;
+                        var alias = ''
+                        if(user){
+                            var tempArray = user.split('@')
+                            if (tempArray.length === 2){
+                                alias = tempArray[0];
+                            }
+                        }
+                        var groups = cognitoUser.signInUserSession.accessToken.payload["cognito:groups"];
+                        var isAdmin = groups.indexOf('Admin') > -1;
+                        this.setState({
+                            user,
+                            alias,
+                            groups,
+                            isAdmin
+                        });
+                    },
                 }}
             >
                 {this.props.children}

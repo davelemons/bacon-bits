@@ -15,6 +15,8 @@ import { SkipPrevious, SkipNext, ExpandLess, ExpandMore, Settings, Info, Add, Cl
 import './Bits.css';
 import draftToHtml from 'draftjs-to-html';
 import { convertToRaw } from 'draft-js';
+import moment from 'moment';
+import { Auth } from 'aws-amplify'
 var _ = require('lodash');
 const HtmlToReactParser = require('html-to-react').Parser;
 const htmlToReactParser = new HtmlToReactParser();
@@ -195,19 +197,12 @@ export default class Bits extends Component {
   }
 
   componentDidMount() {
+    Auth.currentAuthenticatedUser()
+    .then(user => {
+      this.context.setUser(user);
+    })
+    .catch(err => console.log(err));
     this.fetchBits()
-
-    // API
-    // .get(apiName, '/bits/services/')
-    // .then(response => {
-    //   console.log(response);
-    //   this.setState({
-    //     services: response,
-    //   });
-    // })
-    // .catch(error => {
-    //   console.log(error);
-    // });
   }
 
   selectPrevMatch = () => {
@@ -239,7 +234,7 @@ export default class Bits extends Component {
   };
 
   handleSettingsClick = (node) => {
-    console.log('Dave',node);
+    console.log(this.context.alias);
     var self = this;
 
     this.props.toggleLoader();
@@ -391,9 +386,17 @@ export default class Bits extends Component {
     console.log(html);
 
     var currBit = this.state.currBit
-
     currBit.content = html
 
+    if (this.state.adding){
+      currBit.created = moment().format();
+      currBit.createdBy = this.context.alias;
+      currBit.modified = moment().format();
+      currBit.modifiedBy = this.context.alias;
+    } else if(this.state.editing){
+      currBit.modified = moment().format();
+      currBit.modifiedBy = this.context.alias;
+    }
       API
       .put(apiName, `/bits/`, {body: currBit})
       .then(response => {
@@ -492,12 +495,14 @@ export default class Bits extends Component {
           >
             <ExpandLess />
           </Button>
-          <Button
-            className="addBit" variant="contained" title="Add New Bacon Bit" 
-            onClick={this.handleAddClick.bind(this, false)}
-          >
-            <Add />
-          </Button>
+          {this.context.isAdmin ? (
+            <Button
+              className="addBit" variant="contained" title="Add New Bacon Bit" 
+              onClick={this.handleAddClick.bind(this, false)}
+            >
+              <Add />
+            </Button>
+          ) : (null)}
         </div>
         <div className="tree-wrapper">
           <SortableTree
@@ -520,31 +525,35 @@ export default class Bits extends Component {
                 buttons: [
                   node.data ? (
                     <div>
-                      <button
-                        className="btn btn-outline-success"
-                        title="Delete Bacon Bit"
-                        style={{
-                          verticalAlign: "middle"
-                        }}
-                        onClick={() => this.handleDeleteClick(rowInfo)}
-                      >
-                        <Delete fontSize="small" color="error"/>
-                      </button>
-                      <button
-                        className="btn btn-outline-success"
-                        title="Edit Bacon Bit"
-                        style={{
-                          verticalAlign: "middle",
-                          marginLeft: "5px"
-                        }}
-                        onClick={() => this.handleSettingsClick(rowInfo)}
-                      >
-                        <Settings fontSize="small" color="primary"/>
-                      </button>
+                      {this.context.isAdmin ? (
+                        <button
+                          className="btn btn-outline-success"
+                          title="Delete Bacon Bit"
+                          style={{
+                            verticalAlign: "middle"
+                          }}
+                          onClick={() => this.handleDeleteClick(rowInfo)}
+                        >
+                          <Delete fontSize="small" color="error"/>
+                        </button>
+                      ) : (null)}
+                      {this.context.isAdmin ? (
+                        <button
+                          className="btn btn-outline-success"
+                          title="Edit Bacon Bit"
+                          style={{
+                            verticalAlign: "middle",
+                            marginLeft: "5px"
+                          }}
+                          onClick={() => this.handleSettingsClick(rowInfo)}
+                        >
+                          <Settings fontSize="small" color="primary"/>
+                        </button>
+                      ) : (null)}
                       <HtmlTooltip
                         title={
                           <React.Fragment>
-                            {htmlToReactParser.parse(node.data.content)}
+                            {htmlToReactParser.parse(`${node.data.content}<span style="font-size:10px;color:#505050"><hr />Created By: ${node.data.createdBy || ''} Last Modified By: ${node.data.modifiedBy || ''}</span>`)}
                           </React.Fragment>
                         }
                         interactive

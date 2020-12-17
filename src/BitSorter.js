@@ -54,7 +54,7 @@ export default class BitSorter extends Component {
                   <HtmlTooltip
                     title={
                       <React.Fragment>
-                        {htmlToReactParser.parse(node.data.content)}
+                        {htmlToReactParser.parse(`${node.data.content}<span style="font-size:10px;color:#505050"><hr />Created By: ${node.data.createdBy || ''} Last Modified By: ${node.data.modifiedBy || ''}</span>`)}
                       </React.Fragment>
                     }
                     interactive
