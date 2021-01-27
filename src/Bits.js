@@ -3,7 +3,7 @@ import { API } from "aws-amplify"
 import SortableTree, { toggleExpandedForAll }  from 'react-sortable-tree';
 import 'react-sortable-tree/style.css';
 import { withStyles, makeStyles } from '@material-ui/core/styles';
-import { Button, TextField, Dialog, Typography, IconButton, InputLabel, FormControl, Select, MenuItem  } from '@material-ui/core';
+import { Button, TextField, Dialog, Typography, IconButton, Switch, FormControlLabel, InputLabel, FormControl, Select, MenuItem  } from '@material-ui/core';
 import Autocomplete, { createFilterOptions } from '@material-ui/lab/Autocomplete';
 import MuiDialogTitle from '@material-ui/core/DialogTitle';
 import MuiDialogContent from '@material-ui/core/DialogContent';
@@ -94,7 +94,8 @@ export default class Bits extends Component {
         service: '',
         category: '',
         name: '',
-        content:''
+        content:'',
+        internal: false
       },
       adding: false,
       editing: false,
@@ -115,6 +116,17 @@ export default class Bits extends Component {
     });
   };
 
+  handleKeyDown = e => {
+    //TODO: For some reason this isn't forcing a search.
+    //console.log(e.key);
+    if (e.key === 'Enter') {
+      this.setState({
+        searchString: e.target.value
+      });
+    }
+  };
+
+
   handleModalClose = e => {
     this.setState({
       open: false,
@@ -129,7 +141,7 @@ export default class Bits extends Component {
     API
     .get(apiName, '/bits/')
     .then(response => {
-      console.log(response);
+      //console.log(response);
 
       //Sort and Group...TODO: this is gross...but it works.
       var bits = response;
@@ -169,7 +181,7 @@ export default class Bits extends Component {
               var items = children[property2]
               items.forEach(element => {
                 categoryNode.children.push({
-                  title:element.name,
+                  title: element.internal ? element.name + ' (INTERNAL)' : element.name,
                   service: element.service,
                   subtitle:`${element.service} - ${element.category}`,
                   id: element.id,
@@ -234,7 +246,7 @@ export default class Bits extends Component {
   };
 
   handleSettingsClick = (node) => {
-    console.log(this.context.alias);
+    //console.log(this.context.alias);
     var self = this;
 
     this.props.toggleLoader();
@@ -242,7 +254,7 @@ export default class Bits extends Component {
     API
     .get(apiName, `/bits/object/${node.node.id}/${node.node.service}`)
     .then(response => {
-      console.log(response);
+      //console.log(response);
       this.context.setBitEditorStateFromHTML(response.content);
       this.setState({
         currBit: response,
@@ -313,6 +325,14 @@ export default class Bits extends Component {
     });
   };
 
+  toggleInternal = (event) => {
+    var currBit = this.state.currBit;
+    currBit.internal = !currBit.internal;
+    this.setState({
+      currBit
+    });
+  };
+
   handleTitleChange = (event) => {
     //console.log('handleTitleChange',event.target.value);
     var currBit = this.state.currBit;
@@ -333,7 +353,8 @@ export default class Bits extends Component {
         service: '',
         category: '',
         name: '',
-        content:''
+        content:'',
+        internal: false
       }
     });
   };
@@ -379,14 +400,24 @@ export default class Bits extends Component {
   }
 
   handleModalSave = () => {
-    this.props.toggleLoader();
+    
     var self = this;
     const rawContentState = convertToRaw(this.context.bitEditorState.getCurrentContent());
     const html = draftToHtml(rawContentState);
-    console.log(html);
+    //console.log(html);
 
     var currBit = this.state.currBit
     currBit.content = html
+
+    if(!currBit.service || !currBit.category || !currBit.name){
+      self.props.addNotification({
+        message: 'All fields are required, please provide a value for Service, Category, and Title.',
+        level: 'warning'
+      });
+      return;
+    }
+
+    this.props.toggleLoader();
 
     if (this.state.adding){
       currBit.created = moment().format();
@@ -444,8 +475,13 @@ export default class Bits extends Component {
         //add to selected
         selectedBits.push(node);
         node.selected = true;
+        if (node.data && node.data.internal){
+          this.props.addNotification({
+            message: 'You selected a bit with Internal content. Proceed with caution!',
+            level: 'warning'
+          });
+        }
       }
-
       context.setSelectedBits(selectedBits);
     }
     
@@ -479,7 +515,7 @@ export default class Bits extends Component {
     return (
       <div>
         <div className="bar-wrapper">
-          <TextField size="small" placeholder="search" variant="outlined"  onChange={this.handleSearchOnChange} />
+          <TextField size="small" placeholder="search" variant="outlined"  onChange={this.handleSearchOnChange} onKeyDown={this.handleKeyDown} />
           <Button variant="contained" className="previous" title="Previous Search result" onClick={this.selectPrevMatch}>
             <SkipPrevious />
           </Button>
@@ -507,6 +543,9 @@ export default class Bits extends Component {
         <div className="tree-wrapper">
           <SortableTree
             treeData={treeData}
+            onlyExpandSearchedNodes={true}
+            scaffoldBlockPxWidth={25}
+            rowHeight={60}
             canDrag={false}
             onChange={this.handleTreeOnChange}
             searchQuery={searchString}
@@ -585,11 +624,22 @@ export default class Bits extends Component {
                   }
                 },
                 style:
-                  node.selected
+                  node.selected && node.data && node.data.internal
                     ? {
-                        border: "4px solid #707070"
+                        border: "4px solid #707070",
+                        color: "red"
                       }
-                    : {}
+                    :
+                    node.selected
+                      ? {
+                          border: "4px solid #707070"
+                        }
+                    :
+                    node.data && node.data.internal
+                      ? {
+                          color: "red"
+                        }
+                      : {}
               };
             }}
             isVirtualized={true}
@@ -648,7 +698,7 @@ export default class Bits extends Component {
               renderOption={(option) => option.title}
               freeSolo
               renderInput={(params) => (
-                <TextField {...params} label="Service" />
+                <TextField {...params} label="Service *" />
               )}
             />
 
@@ -690,11 +740,15 @@ export default class Bits extends Component {
               renderOption={(option) => option.title}
               freeSolo
               renderInput={(params) => (
-                <TextField {...params} label="Category" />
+                <TextField {...params} label="Category *" />
               )}
             />
             
-            <TextField className="formControl" id="input-title" label="Title" value={currBit.name} onChange={this.handleTitleChange} />
+            <TextField className="formControl" id="input-title" label="Title *" value={currBit.name} onChange={this.handleTitleChange} />
+            <FormControlLabel
+              control={<Switch checked={currBit.internal} onChange={this.toggleInternal} />}
+              label="Internal Only"
+            />
             <BitEditor/>
           </DialogContent>
           <DialogActions>

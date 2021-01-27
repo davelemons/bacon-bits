@@ -75,7 +75,13 @@ export default class BitSorter extends Component {
                   (
                     null
                   )
-                ]
+                ],
+                style:
+                    node.data && node.data.internal
+                      ? {
+                          color: "red"
+                        }
+                      : {}
               };
             }}
             isVirtualized={true}
