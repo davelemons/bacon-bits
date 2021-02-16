@@ -56,23 +56,34 @@ const convertUrlType = (param, type) => {
   }
 }
 
+const getBits = async () => {
+  let result, ExclusiveStartKey;
+  let accumulated = [];
+
+  do {
+    result = await dynamodb.scan({
+            TableName: tableName
+        }).promise();
+
+    ExclusiveStartKey = result.LastEvaluatedKey;
+    accumulated = [...accumulated, ...result.Items];
+  } while (result.LastEvaluatedKey);
+
+  return {Items: accumulated};
+};
+
 /********************************
  * HTTP Get method for get all *
  ********************************/
 
 app.get(path, function(req, res) {
   //TODO: this likely needs some work as eventually we will return too much.
-  let scanParams = {
-    TableName: tableName,
-  }
 
-  dynamodb.scan(scanParams, (err, data) => {
-    if (err) {
-      res.statusCode = 500;
-      res.json({error: 'Could not load items: ' + err});
-    } else {
-      res.json(data.Items);
-    }
+  getBits().then(function(bits) {
+    res.json(bits.Items);
+  }).catch(function(e) {
+    res.statusCode = 500;
+    res.json({error: 'Could not load items: ' + e});
   });
 
 });
@@ -184,6 +195,28 @@ app.put(path, function(req, res) {
       res.json({error: err, url: req.url, body: req.body});
     } else{
       res.json({success: 'put call succeed!', url: req.url, data: data})
+
+      //Send SNS notification
+      if(process.env.SNS_ARN){
+        // Create publish parameters
+        var params = {
+          Message: `A Bacon Bit was created/updated in ${process.env.ENV}!<hr />${JSON.stringify(req.body,null,2)}`, /* required */
+          TopicArn: process.env.SNS_ARN
+        };
+
+        // Create promise and SNS service object
+        var publishTextPromise = new AWS.SNS({apiVersion: '2010-03-31'}).publish(params).promise();
+
+        // Handle promise's fulfilled/rejected states
+        publishTextPromise.then(
+          function(data) {
+            console.log(`Message ${params.Message} sent to the topic ${params.TopicArn}`);
+            console.log("MessageID is " + data.MessageId);
+          }).catch(
+            function(err) {
+            console.error(err, err.stack);
+          });
+      }
     }
   });
 });
@@ -211,6 +244,28 @@ app.post(path, function(req, res) {
       res.json({error: err, url: req.url, body: req.body});
     } else{
       res.json({success: 'post call succeed!', url: req.url, data: data})
+
+      //Send SNS notification
+      if(process.env.SNS_ARN){
+        // Create publish parameters
+        var params = {
+          Message: `A Bacon Bit was created/updated in ${process.env.ENV}!\n\n${JSON.stringify(req.body,null,2)}`, /* required */
+          TopicArn: process.env.SNS_ARN
+        };
+
+        // Create promise and SNS service object
+        var publishTextPromise = new AWS.SNS({apiVersion: '2010-03-31'}).publish(params).promise();
+
+        // Handle promise's fulfilled/rejected states
+        publishTextPromise.then(
+          function(data) {
+            console.log(`Message ${params.Message} sent to the topic ${params.TopicArn}`);
+            console.log("MessageID is " + data.MessageId);
+          }).catch(
+            function(err) {
+            console.error(err, err.stack);
+          });
+      }
     }
   });
 });
