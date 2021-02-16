@@ -200,7 +200,7 @@ app.put(path, function(req, res) {
       if(process.env.SNS_ARN){
         // Create publish parameters
         var params = {
-          Message: `A Bacon Bit was created/updated in ${process.env.ENV}!<hr />${JSON.stringify(req.body,null,2)}`, /* required */
+          Message: `A Bacon Bit was created/updated in ${process.env.ENV}!\n\n${JSON.stringify(req.body,null,2)}`, /* required */
           TopicArn: process.env.SNS_ARN
         };
 
