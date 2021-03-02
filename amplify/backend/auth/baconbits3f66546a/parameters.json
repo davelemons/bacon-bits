@@ -1,6 +1,6 @@
 {
     "identityPoolName": "baconbits3f66546a_identitypool_3f66546a",
-    "allowUnauthenticatedIdentities": false,
+    "allowUnauthenticatedIdentities": true,
     "resourceNameTruncated": "baconb3f66546a",
     "userPoolName": "baconbits3f66546a_userpool_3f66546a",
     "autoVerifiedAttributes": [

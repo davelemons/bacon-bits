@@ -1,0 +1,21 @@
+{
+    "appName": "baconbits",
+    "roleName": "pinpointLambdaRolec9a08e6a",
+    "cloudformationPolicyName": "cloudformationPolicyc9a08e6a",
+    "cloudWatchPolicyName": "cloudWatchPolicyc9a08e6a",
+    "pinpointPolicyName": "pinpointPolicyc9a08e6a",
+    "authPolicyName": "pinpoint_amplify_c9a08e6a",
+    "unauthPolicyName": "pinpoint_amplify_c9a08e6a",
+    "authRoleName": {
+        "Ref": "AuthRoleName"
+    },
+    "unauthRoleName": {
+        "Ref": "UnauthRoleName"
+    },
+    "authRoleArn": {
+        "Fn::GetAtt": [
+            "AuthRole",
+            "Arn"
+        ]
+    }
+}
