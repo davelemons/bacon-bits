@@ -71,6 +71,18 @@ function App() {
     }
   }
 
+  // if(AuthState.SignedIn && user){
+  //   Analytics.record( 
+  //     {
+  //       name: 'baconBitsLoaded' , 
+  //       'Endpoint' : user.attributes.email,
+  //       attributes:{
+  //         Timestamp: new Date().toISOString(), 
+  //         ChannelType: 'EMAIL', 
+  //         Address: user.attributes.email
+  //       },
+  //   }); 
+  // }
  return authState === AuthState.SignedIn && user ? ( //TODO: remove when done testing
 //return 1===1 ? (
   <BitsProvider>

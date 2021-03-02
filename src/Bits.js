@@ -16,7 +16,7 @@ import './Bits.css';
 import draftToHtml from 'draftjs-to-html';
 import { convertToRaw } from 'draft-js';
 import moment from 'moment';
-import { Auth } from 'aws-amplify'
+import { Auth, Analytics } from 'aws-amplify'
 var _ = require('lodash');
 const HtmlToReactParser = require('html-to-react').Parser;
 const htmlToReactParser = new HtmlToReactParser();
@@ -475,6 +475,19 @@ export default class Bits extends Component {
         //add to selected
         selectedBits.push(node);
         node.selected = true;
+        
+        Analytics.record( 
+          {
+            name: 'bitSelected' , 
+            'Endpoint' : this.context.user,
+            attributes:{
+              bitId: node.id, 
+              Timestamp: new Date().toISOString(), 
+              ChannelType: 'EMAIL', 
+              Address: this.context.user
+            },
+        }); 
+
         if (node.data && node.data.internal){
           this.props.addNotification({
             message: 'You selected a bit with Internal content. Proceed with caution!',
