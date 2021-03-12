@@ -55,3 +55,14 @@ html,
   top: unset !important;
 }
 
+.MuiListItem-container {
+  border: 1px solid #909090;
+  margin-bottom: 5px !important;
+  border-radius: 4px;
+}
+
+.MuiListItemText-root{
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+

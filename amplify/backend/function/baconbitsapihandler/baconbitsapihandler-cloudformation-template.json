@@ -64,7 +64,8 @@
             "REGION": {
               "Ref": "AWS::Region"
             },
-            "SNS_ARN": "arn:aws:sns:us-east-1:365414534056:BaconBitsNotifications"
+            "SNS_ARN": "arn:aws:sns:us-east-1:365414534056:BaconBitsNotifications",
+            "CLOUD_SEARCH_DOMAIN": "baconbits-xfssyjabaqeecsgczi3nne2634.us-east-1.cloudsearch.amazonaws.com"
           }
         },
         "Role": {
@@ -78,7 +79,7 @@
         "Timeout": "25",
         "Code": {
           "S3Bucket": "amplify-baconbits-dev-93704-deployment",
-          "S3Key": "amplify-builds/baconbitsapihandler-727364473775486e3170-build.zip"
+          "S3Key": "amplify-builds/baconbitsapihandler-31326b774d4864374735-build.zip"
         }
       }
     },

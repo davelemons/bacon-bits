@@ -17,6 +17,8 @@ var express = require('express')
 AWS.config.update({ region: process.env.TABLE_REGION });
 
 const dynamodb = new AWS.DynamoDB.DocumentClient();
+const csd = new AWS.CloudSearchDomain({endpoint: `search-${process.env.CLOUD_SEARCH_DOMAIN}`});
+const csdd = new AWS.CloudSearchDomain({endpoint: `doc-${process.env.CLOUD_SEARCH_DOMAIN}`});
 
 
 let tableName = "baconbitsdynamodb";
@@ -29,11 +31,16 @@ const partitionKeyName = "id";
 const partitionKeyType = "S";
 const sortKeyName = "service";
 const sortKeyType = "S";
+const queryName = "query";
+const queryType = "S";
 const hasSortKey = sortKeyName !== "";
 const path = "/bits";
+const searchPath = "/search";
 const UNAUTH = 'UNAUTH';
 const hashKeyPath = '/:' + partitionKeyName;
 const sortKeyPath = hasSortKey ? '/:' + sortKeyName : '';
+const queryPath = '/:' + queryName;
+
 // declare a new express app
 var app = express()
 app.use(bodyParser.json())
@@ -85,6 +92,39 @@ app.get(path, function(req, res) {
     res.statusCode = 500;
     res.json({error: 'Could not load items: ' + e});
   });
+
+});
+
+
+/********************************
+ * HTTP Get method for search   *
+ ********************************/
+
+app.get(path + searchPath + queryPath, function(req, res) {
+  var query;
+
+  try {
+      query = convertUrlType(req.params[queryName], queryType);
+      console.log('Query: ',query);
+
+      var params = {
+        query: query /* required */
+      };
+      
+      csd.search(params, function (err, data) {
+          if (err) { 
+            console.log(err, err.stack); // an error occurred
+            res.statusCode = 500;
+            res.json({error: 'Error returned from CloudSearch' + err});
+          } else {
+            console.log(data);           // successful response
+            res.json(data);
+          }
+        });
+    } catch(err) {
+      res.statusCode = 500;
+      res.json({error: 'Unhandled error from CloudSearch ' + err});
+    }
 
 });
 
