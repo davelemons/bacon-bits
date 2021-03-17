@@ -17,6 +17,12 @@
     "storagebaconbitsdynamodbArn": {
       "Type": "String",
       "Default": "storagebaconbitsdynamodbArn"
+    },
+    "deploymentBucketName": {
+      "Type": "String"
+    },
+    "s3Key": {
+      "Type": "String"
     }
   },
   "Conditions": {
@@ -64,7 +70,8 @@
             "REGION": {
               "Ref": "AWS::Region"
             },
-            "SNS_ARN": "arn:aws:sns:us-east-1:365414534056:BaconBitsNotifications"
+            "SNS_ARN": "arn:aws:sns:us-east-1:365414534056:BaconBitsNotifications",
+            "CLOUD_SEARCH_DOMAIN": "baconbits-xfssyjabaqeecsgczi3nne2634.us-east-1.cloudsearch.amazonaws.com"
           }
         },
         "Role": {
@@ -77,8 +84,12 @@
         "Layers": [],
         "Timeout": "25",
         "Code": {
-          "S3Bucket": "amplify-baconbits-dev-93704-deployment",
-          "S3Key": "amplify-builds/baconbitsapihandler-727364473775486e3170-build.zip"
+          "S3Bucket": {
+            "Ref": "deploymentBucketName"
+          },
+          "S3Key": {
+            "Ref": "s3Key"
+          }
         }
       }
     },

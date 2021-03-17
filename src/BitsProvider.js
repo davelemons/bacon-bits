@@ -29,6 +29,7 @@ class BitsProvider extends Component {
                     isAdmin: this.state.isAdmin,
                     setSelectedBits: (selectedBits) => {
                       //Build Editor HTML
+                      console.log("Dave1");
                       var content = '';
                       selectedBits.forEach(bit => {
                           if(bit.data && bit.data.content) content += '' + bit.data.content + '<p></p>';
@@ -38,6 +39,7 @@ class BitsProvider extends Component {
                       const { contentBlocks, entityMap } = blocksFromHtml;
                       const contentState = ContentState.createFromBlockArray(contentBlocks, entityMap);
                       const editorState = EditorState.createWithContent(contentState);
+                      console.log(selectedBits);
                       this.setState({
                         selectedBits,
                         editorState
