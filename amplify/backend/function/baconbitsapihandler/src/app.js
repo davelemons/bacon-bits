@@ -261,27 +261,27 @@ app.put(path, function(req, res) {
        }else{
           console.log('document uploaded successfully',data);
           res.json({success: 'put call succeed!', url: req.url, data: data})
-          // //Send SNS notification
-          // if(process.env.SNS_ARN){
-          //   // Create publish parameters
-          //   var params = {
-          //     Message: `A Bacon Bit was created/updated in ${process.env.ENV}!\n\n${JSON.stringify(req.body,null,2)}`, /* required */
-          //     TopicArn: process.env.SNS_ARN
-          //   };
+          //Send SNS notification
+          if(process.env.SNS_ARN){
+            // Create publish parameters
+            var params = {
+              Message: `A Bacon Bit was created/updated in ${process.env.ENV}!\n\n${JSON.stringify(req.body,null,2)}`, /* required */
+              TopicArn: process.env.SNS_ARN
+            };
 
-          //   // Create promise and SNS service object
-          //   var publishTextPromise = new AWS.SNS({apiVersion: '2010-03-31'}).publish(params).promise();
+            // Create promise and SNS service object
+            var publishTextPromise = new AWS.SNS({apiVersion: '2010-03-31'}).publish(params).promise();
 
-          //   // Handle promise's fulfilled/rejected states
-          //   publishTextPromise.then(
-          //     function(data) {
-          //       console.log(`Message ${params.Message} sent to the topic ${params.TopicArn}`);
-          //       console.log("MessageID is " + data.MessageId);
-          //     }).catch(
-          //       function(err) {
-          //       console.error(err, err.stack);
-          //     });
-          // }
+            // Handle promise's fulfilled/rejected states
+            publishTextPromise.then(
+              function(data) {
+                console.log(`Message ${params.Message} sent to the topic ${params.TopicArn}`);
+                console.log("MessageID is " + data.MessageId);
+              }).catch(
+                function(err) {
+                console.error(err, err.stack);
+              });
+          }
        }
       }); 
     }
