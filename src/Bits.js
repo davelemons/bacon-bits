@@ -1,13 +1,14 @@
 import React, { Component }  from 'react';
-import { API } from "aws-amplify"
+import { API, navItem } from "aws-amplify"
 import SortableTree, { toggleExpandedForAll }  from 'react-sortable-tree';
 import 'react-sortable-tree/style.css';
 import { withStyles, makeStyles } from '@material-ui/core/styles';
-import { Button, TextField, Dialog, Typography, IconButton, Switch, FormControlLabel, InputLabel, FormControl, Select, MenuItem  } from '@material-ui/core';
+import { Button, TextField, Dialog, Typography, IconButton, Switch, FormControlLabel, AppBar, Tabs, Tab, Box, List, ListItem, ListItemText, ListItemSecondaryAction  } from '@material-ui/core';
 import Autocomplete, { createFilterOptions } from '@material-ui/lab/Autocomplete';
 import MuiDialogTitle from '@material-ui/core/DialogTitle';
 import MuiDialogContent from '@material-ui/core/DialogContent';
 import MuiDialogActions from '@material-ui/core/DialogActions';
+import PropTypes from 'prop-types';
 import Tooltip from '@material-ui/core/Tooltip';
 import BitsContext from './BitsContext';
 import BitEditor from './BitEditor';
@@ -45,6 +46,11 @@ const styles = (theme) => ({
     top: theme.spacing(1),
     color: theme.palette.grey[500],
   },
+  listNode: {
+    width: '100%',
+    maxWidth: 360,
+    backgroundColor: theme.palette.background.paper,
+  },
 });
 
 const DialogTitle = withStyles(styles)((props) => {
@@ -74,6 +80,46 @@ const DialogActions = withStyles((theme) => ({
   },
 }))(MuiDialogActions);
 
+function TabPanel(props) {
+  const { children, value, index, ...other } = props;
+
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`simple-tabpanel-${index}`}
+      aria-labelledby={`simple-tab-${index}`}
+      {...other}
+    >
+      {value === index && (
+        <Box p={3}>
+          <Typography>{children}</Typography>
+        </Box>
+      )}
+    </div>
+  );
+}
+
+TabPanel.propTypes = {
+  children: PropTypes.node,
+  index: PropTypes.any.isRequired,
+  value: PropTypes.any.isRequired,
+};
+
+function a11yProps(index) {
+  return {
+    id: `simple-tab-${index}`,
+    'aria-controls': `simple-tabpanel-${index}`,
+  };
+}
+
+const useStyles = makeStyles((theme) => ({
+  root: {
+    flexGrow: 1,
+    backgroundColor: theme.palette.background.paper,
+  },
+}));
+
 export default class Bits extends Component {
   constructor(props) {
     super(props);
@@ -84,25 +130,31 @@ export default class Bits extends Component {
         // { title: 'Pinpoint', id: '2', selected: false, children: [{ title: 'Compliance & Certifications', id: '4',  selected: false, data: {content: "<strong>Pinpoint Compliance and Certifications</strong><p><a href='https://aws.amazon.com/compliance/services-in-scope'>https://aws.amazon.com/compliance/services-in-scope</a></p>"} }] },
       ],
       searchString: "",
+      cloudSearchString: "",
       searchFocusIndex: 0,
       searchFoundCount: 0,
       nodeClicked: false,
       selectedNodes:[],
       open: false,
       services:[],
+      searchHits: [],
       currBit:{
         service: '',
         category: '',
         name: '',
         content:'',
-        internal: false
+        internal: "false"
       },
       adding: false,
       editing: false,
-      categories: [{title: '2-WAY SMS'},{title: 'COMPLIANCE'}]
+      categories: [{title: '2-WAY SMS'},{title: 'COMPLIANCE'}],
+      currTab: 0
     };
   }
-  
+
+  handleTabChange = (event, newValue) => {
+    this.setState({ currTab: newValue });
+  };
 
   static contextType = BitsContext;
 
@@ -115,6 +167,25 @@ export default class Bits extends Component {
       searchString: e.target.value
     });
   };
+
+  handleCloudSearchOnChange = (evt)=> {
+    this.debouncedSearch(evt.target.value);
+  };  
+
+  debouncedSearch = _.debounce(function (query) {
+    console.log("Search: ",query)  
+    API
+    .get(apiName, `/bits/search/${query}`)
+    .then(response => {
+      console.log(response);
+      this.setState({
+        searchHits: response.hits.hit
+      });
+    })
+    .catch(error => {
+      console.log(error);
+    });
+  }, 500);
 
   handleKeyDown = e => {
     //TODO: For some reason this isn't forcing a search.
@@ -181,7 +252,7 @@ export default class Bits extends Component {
               var items = children[property2]
               items.forEach(element => {
                 categoryNode.children.push({
-                  title: element.internal ? element.name + ' (INTERNAL)' : element.name,
+                  title: element.internal === "true" ? element.name + ' (INTERNAL)' : element.name,
                   service: element.service,
                   subtitle:`${element.service} - ${element.category}`,
                   id: element.id,
@@ -327,7 +398,8 @@ export default class Bits extends Component {
 
   toggleInternal = (event) => {
     var currBit = this.state.currBit;
-    currBit.internal = !currBit.internal;
+    if (currBit.internal === "true") currBit.internal = "false"
+    else currBit.internal = "false"
     this.setState({
       currBit
     });
@@ -354,7 +426,7 @@ export default class Bits extends Component {
         category: '',
         name: '',
         content:'',
-        internal: false
+        internal: "false"
       }
     });
   };
@@ -460,44 +532,69 @@ export default class Bits extends Component {
 
   };
 
+  handleHitClick = (hit) => {
+    //Need to remap CloudSearch arrays to just strings
+    console.log(hit);
+    var node = {
+      id: hit.id[0],
+      selected: false,
+      service: hit.service[0],
+      subtitle: `${hit.service[0]} - ${hit.category[0]}`,
+      title: hit.internal && hit.internal[0] === "true" ? hit.name[0] + ' (INTERNAL)' : hit.name[0],
+      expanded: false,
+      data:{
+        category: hit.category[0],
+        content: hit.content[0],
+        id: hit.id[0],
+        name: hit.name[0],
+        service: hit.service[0],
+        internal: hit.internal && hit.internal[0],
+        createdby: hit.createdby && hit.createdby[0] ? hit.createdby[0] : "",
+        modifiedby: hit.modifiedby && hit.modifiedby[0] ? hit.modifiedby[0] : ""
+      }
+    }
+
+    this.handleNodeClick(node);
+  }
+
   handleNodeClick = (node) => {
     if(!node.children){ //No Selecting Root Nodes
       const context = this.context;
       var selectedBits = context.selectedBits;
-      console.log(node);
-      if (node.selected) {
-        //Remove from selected
-        selectedBits = selectedBits.filter(function(item) {
-          return item.id !== node.id;
-        });
-        node.selected = false;
-      } else {
+
+      var found = false
+      selectedBits.forEach(bit => {
+        if (bit.id === node.id){
+          found = true;
+        }
+      });
+
+      if (!found) {
         //add to selected
         selectedBits.push(node);
-        node.selected = true;
-        
-        Analytics.record( 
-          {
-            name: 'bitSelected' , 
-            'Endpoint' : this.context.user,
-            attributes:{
-              bitId: node.id, 
-              Timestamp: new Date().toISOString(), 
-              ChannelType: 'EMAIL', 
-              Address: this.context.user
-            },
-        }); 
+    
+        // Analytics.record( 
+        //   {
+        //     name: 'bitSelected' , 
+        //     'Endpoint' : this.context.user,
+        //     attributes:{
+        //       bitId: node.id, 
+        //       Timestamp: new Date().toISOString(), 
+        //       ChannelType: 'EMAIL', 
+        //       Address: this.context.user
+        //     },
+        // }); 
 
-        if (node.data && node.data.internal){
+        if (node.data && node.data.internal === "true"){
           this.props.addNotification({
             message: 'You selected a bit with Internal content. Proceed with caution!',
             level: 'warning'
           });
         }
+        context.setSelectedBits(selectedBits);
       }
-      context.setSelectedBits(selectedBits);
+      
     }
-    
   };
 
   render() {
@@ -510,7 +607,9 @@ export default class Bits extends Component {
       modalTitle,
       currBit,
       categories,
-      services
+      services,
+      currTab,
+      searchHits
     } = this.state;
 
     const customSearchMethod = ({  node, path, treeIndex, searchQuery }) => {
@@ -527,250 +626,313 @@ export default class Bits extends Component {
     
     return (
       <div>
-        <div className="bar-wrapper">
-          <TextField size="small" placeholder="search" variant="outlined"  onChange={this.handleSearchOnChange} onKeyDown={this.handleKeyDown} />
-          <Button variant="contained" className="previous" title="Previous Search result" onClick={this.selectPrevMatch}>
-            <SkipPrevious />
-          </Button>
-          <Button variant="contained" className="next" title="Next Search result" onClick={this.selectNextMatch}>
-            <SkipNext />
-          </Button>
-          <Button variant="contained" className="expand" title="Expand" onClick={this.toggleNodeExpansion.bind(this, true)}>
-            <ExpandMore />
-          </Button>
-          <Button
-            className="collapse" variant="contained" title="Collapse" 
-            onClick={this.toggleNodeExpansion.bind(this, false)}
-          >
-            <ExpandLess />
-          </Button>
-          {this.context.isAdmin ? (
-            <Button
-              className="addBit" variant="contained" title="Add New Bacon Bit" 
-              onClick={this.handleAddClick.bind(this, false)}
-            >
-              <Add />
-            </Button>
-          ) : (null)}
-        </div>
-        <div className="tree-wrapper">
-          <SortableTree
-            treeData={treeData}
-            onlyExpandSearchedNodes={true}
-            scaffoldBlockPxWidth={25}
-            rowHeight={60}
-            canDrag={false}
-            onChange={this.handleTreeOnChange}
-            searchQuery={searchString}
-            searchMethod={customSearchMethod}
-            searchFocusOffset={searchFocusIndex}
-            searchFinishCallback={matches =>
-              this.setState({
-                searchFoundCount: matches.length,
-                searchFocusIndex:
-                  matches.length > 0 ? searchFocusIndex % matches.length : 0
-              })
-            }
-            generateNodeProps={(rowInfo) => {
-              const { node } = rowInfo;
-              return {
-                buttons: [
-                  node.data ? (
-                    <div>
+      <AppBar position="static">
+        <Tabs value={currTab} onChange={this.handleTabChange} aria-label="simple tabs example">
+          <Tab label="Search" {...a11yProps(0)} />
+          <Tab label="Browse" {...a11yProps(1)} />
+        </Tabs>
+      </AppBar>
+      <TabPanel value={currTab} index={0}>
+        <TextField size="small" placeholder="Search..." variant="outlined" fullWidth onChange={this.handleCloudSearchOnChange}/>
+     
+          <List dense={true}>
+            {searchHits.map((value) => {
+              const labelId = `list-label-${value.id}`;
+              //Dear Future Dave: you need to figure out how to convert all Search Hits, to a node while converting dumb string arrays to strings
+              return (
+                <ListItem key={value.id} role={undefined} dense button  onClick={() => this.handleHitClick(value.fields)} className={value.fields.internal && value.fields.internal[0] === "true" ? 'internalNode' : ''}>
+                  <ListItemText id={labelId} primary={ value.fields.internal && value.fields.internal[0] === "true" ? value.fields.name[0] + ' (INTERNAL)' : value.fields.name[0]  } secondary={`${value.fields.service[0]} - ${value.fields.category[0]}`} />
+                  <ListItemSecondaryAction>
                       {this.context.isAdmin ? (
-                        <button
-                          className="btn btn-outline-success"
-                          title="Delete Bacon Bit"
-                          style={{
-                            verticalAlign: "middle"
-                          }}
-                          onClick={() => this.handleDeleteClick(rowInfo)}
-                        >
-                          <Delete fontSize="small" color="error"/>
-                        </button>
+                          <button
+                            className="btn btn-outline-success"
+                            title="Delete Bacon Bit"
+                            style={{
+                              verticalAlign: "middle"
+                            }}
+                            onClick={() => this.handleDeleteClick({node: value.fields})}
+                          >
+                            <Delete fontSize="small" color="error"/>
+                          </button>
                       ) : (null)}
                       {this.context.isAdmin ? (
-                        <button
-                          className="btn btn-outline-success"
-                          title="Edit Bacon Bit"
-                          style={{
-                            verticalAlign: "middle",
-                            marginLeft: "5px"
-                          }}
-                          onClick={() => this.handleSettingsClick(rowInfo)}
-                        >
-                          <Settings fontSize="small" color="primary"/>
-                        </button>
+                              <button
+                                className="btn btn-outline-success"
+                                title="Edit Bacon Bit"
+                                style={{
+                                  verticalAlign: "middle",
+                                  marginLeft: "5px"
+                                }}
+                                onClick={() => this.handleSettingsClick({node: value.fields})}
+                              >
+                                <Settings fontSize="small" color="primary"/>
+                              </button>
                       ) : (null)}
                       <HtmlTooltip
-                        title={
-                          <React.Fragment>
-                            {htmlToReactParser.parse(`${node.data.content}<span style="font-size:10px;color:#505050"><hr />Created By: ${node.data.createdBy || ''} Last Modified By: ${node.data.modifiedBy || ''}</span>`)}
-                          </React.Fragment>
-                        }
-                        interactive
-                        arrow
-                        placement="right"
-                      >
-                        <button
-                          className="btn btn-outline-success"
-                          style={{
-                            verticalAlign: "middle",
-                            marginLeft: "5px"
-                          }}
-                        >
-                          <Info fontSize="small" color="primary"/>
-                        </button>
-                      </HtmlTooltip>
-                    </div>
-                  ) :
-                  (
-                    null
-                  )
-                ],
-                onClick: (event) => {
-                  if(typeof(event.target.className) === 'object') {
-                    // Ignore the onlick, or do something different as the (+) or (-) button has been clicked.
-                  }
-                  else {
-                    this.handleNodeClick(node);
-                  }
-                },
-                style:
-                  node.selected && node.data && node.data.internal
-                    ? {
-                        border: "4px solid #707070",
-                        color: "red"
-                      }
-                    :
-                    node.selected
-                      ? {
-                          border: "4px solid #707070"
-                        }
-                    :
-                    node.data && node.data.internal
-                      ? {
-                          color: "red"
-                        }
-                      : {}
-              };
-            }}
-            isVirtualized={true}
-          />
-        </div>
-        <Dialog onClose={this.handleModalClose} aria-labelledby="customized-dialog-title" open={open}>
-          <DialogTitle id="customized-dialog-title" onClose={this.handleModalClose}>
-            {modalTitle}
-          </DialogTitle>
-          <DialogContent dividers>
-            {/* <FormControl className="formControl">
-              <InputLabel id="demo-simple-select-label">Service</InputLabel>
-              <Select
-                labelId="demo-simple-select-label"
-                id="select-service"
-                value={currBit.service}
-                onChange={this.handleServiceChange}
-              >
-                {services}
-              </Select>
-            </FormControl> */}
-
-            <Autocomplete
-              value={currBit.service}
-              onChange={this.handleService2Change}
-              filterOptions={(options, params) => {
-                const filtered = filter(options, params);
-
-                // Suggest the creation of a new value
-                if (params.inputValue !== '') {
-                  filtered.push({
-                    inputValue: params.inputValue,
-                    title: `Add "${params.inputValue}"`,
-                  });
-                }
-
-                return filtered;
-              }}
-              selectOnFocus
-              clearOnBlur
-              handleHomeEndKeys
-              id="service-autocomplete"
-              options={services}
-              getOptionLabel={(option) => {
-                // Value selected with enter, right from the input
-                if (typeof option === 'string') {
-                  return option;
-                }
-                // Add "xxx" option created dynamically
-                if (option.inputValue) {
-                  return option.inputValue;
-                }
-                // Regular option
-                return option.title;
-              }}
-              renderOption={(option) => option.title}
-              freeSolo
-              renderInput={(params) => (
-                <TextField {...params} label="Service *" />
-              )}
-            />
-
-            {/* <TextField className="formControl" id="input-category" label="Category" value={currBit.category} onChange={this.handleCategoryChange} /> */}
-            
-            <Autocomplete
-              value={currBit.category}
-              onChange={this.handleCategory2Change}
-              filterOptions={(options, params) => {
-                const filtered = filter(options, params);
-
-                // Suggest the creation of a new value
-                if (params.inputValue !== '') {
-                  filtered.push({
-                    inputValue: params.inputValue,
-                    title: `Add "${params.inputValue}"`,
-                  });
-                }
-
-                return filtered;
-              }}
-              selectOnFocus
-              clearOnBlur
-              handleHomeEndKeys
-              id="free-solo-with-text-demo"
-              options={categories}
-              getOptionLabel={(option) => {
-                // Value selected with enter, right from the input
-                if (typeof option === 'string') {
-                  return option;
-                }
-                // Add "xxx" option created dynamically
-                if (option.inputValue) {
-                  return option.inputValue;
-                }
-                // Regular option
-                return option.title;
-              }}
-              renderOption={(option) => option.title}
-              freeSolo
-              renderInput={(params) => (
-                <TextField {...params} label="Category *" />
-              )}
-            />
-            
-            <TextField className="formControl" id="input-title" label="Title *" value={currBit.name} onChange={this.handleTitleChange} />
-            <FormControlLabel
-              control={<Switch checked={currBit.internal} onChange={this.toggleInternal} />}
-              label="Internal Only"
-            />
-            <BitEditor/>
-          </DialogContent>
-          <DialogActions>
-            <Button autoFocus onClick={this.handleModalSave} color="primary">
-              Save changes
+                            title={
+                              <React.Fragment>
+                                {htmlToReactParser.parse(`${value.fields.content[0]}<span style="font-size:10px;color:#505050"><hr />Created By: ${value.fields.createdby && value.fields.createdby[0] ? value.fields.createdby[0] : ''} Last Modified By: ${value.fields.modifiedby && value.fields.modifiedby[0] ? value.fields.modifiedby[0] : ''}</span>`)}
+                              </React.Fragment>
+                            }
+                            interactive
+                            arrow
+                            placement="right"
+                          >
+                            <button
+                              className="btn btn-outline-success"
+                              style={{
+                                verticalAlign: "middle",
+                                marginLeft: "5px"
+                              }}
+                            >
+                              <Info fontSize="small" color="primary"/>
+                            </button>
+                        </HtmlTooltip>
+                  </ListItemSecondaryAction>
+                </ListItem>
+              );
+            })}
+          </List>
+      </TabPanel>
+      <TabPanel value={currTab} index={1}>
+        <div>
+          <div className="bar-wrapper">
+            <TextField size="small" placeholder="search" variant="outlined"  onChange={this.handleSearchOnChange} onKeyDown={this.handleKeyDown} />
+            <Button variant="contained" className="previous" title="Previous Search result" onClick={this.selectPrevMatch}>
+              <SkipPrevious />
             </Button>
-          </DialogActions>
-        </Dialog>
-      </div>
+            <Button variant="contained" className="next" title="Next Search result" onClick={this.selectNextMatch}>
+              <SkipNext />
+            </Button>
+            <Button variant="contained" className="expand" title="Expand" onClick={this.toggleNodeExpansion.bind(this, true)}>
+              <ExpandMore />
+            </Button>
+            <Button
+              className="collapse" variant="contained" title="Collapse" 
+              onClick={this.toggleNodeExpansion.bind(this, false)}
+            >
+              <ExpandLess />
+            </Button>
+            {this.context.isAdmin ? (
+              <Button
+                className="addBit" variant="contained" title="Add New Bacon Bit" 
+                onClick={this.handleAddClick.bind(this, false)}
+              >
+                <Add />
+              </Button>
+            ) : (null)}
+          </div>
+          <div className="tree-wrapper">
+            <SortableTree
+              treeData={treeData}
+              onlyExpandSearchedNodes={true}
+              scaffoldBlockPxWidth={25}
+              rowHeight={60}
+              canDrag={false}
+              onChange={this.handleTreeOnChange}
+              searchQuery={searchString}
+              searchMethod={customSearchMethod}
+              searchFocusOffset={searchFocusIndex}
+              searchFinishCallback={matches =>
+                this.setState({
+                  searchFoundCount: matches.length,
+                  searchFocusIndex:
+                    matches.length > 0 ? searchFocusIndex % matches.length : 0
+                })
+              }
+              generateNodeProps={(rowInfo) => {
+                const { node } = rowInfo;
+                return {
+                  buttons: [
+                    node.data ? (
+                      <div>
+                        {this.context.isAdmin ? (
+                          <button
+                            className="btn btn-outline-success"
+                            title="Delete Bacon Bit"
+                            style={{
+                              verticalAlign: "middle"
+                            }}
+                            onClick={() => this.handleDeleteClick(rowInfo)}
+                          >
+                            <Delete fontSize="small" color="error"/>
+                          </button>
+                        ) : (null)}
+                        {this.context.isAdmin ? (
+                          <button
+                            className="btn btn-outline-success"
+                            title="Edit Bacon Bit"
+                            style={{
+                              verticalAlign: "middle",
+                              marginLeft: "5px"
+                            }}
+                            onClick={() => this.handleSettingsClick(rowInfo)}
+                          >
+                            <Settings fontSize="small" color="primary"/>
+                          </button>
+                        ) : (null)}
+                        <HtmlTooltip
+                          title={
+                            <React.Fragment>
+                              {htmlToReactParser.parse(`${node.data.content}<span style="font-size:10px;color:#505050"><hr />Created By: ${node.data.createdBy || ''} Last Modified By: ${node.data.modifiedBy || ''}</span>`)}
+                            </React.Fragment>
+                          }
+                          interactive
+                          arrow
+                          placement="right"
+                        >
+                          <button
+                            className="btn btn-outline-success"
+                            style={{
+                              verticalAlign: "middle",
+                              marginLeft: "5px"
+                            }}
+                          >
+                            <Info fontSize="small" color="primary"/>
+                          </button>
+                        </HtmlTooltip>
+                      </div>
+                    ) :
+                    (
+                      null
+                    )
+                  ],
+                  onClick: (event) => {
+                    if(typeof(event.target.className) === 'object') {
+                      // Ignore the onlick, or do something different as the (+) or (-) button has been clicked.
+                    }
+                    else {
+                      this.handleNodeClick(node);
+                    }
+                  },
+                  style:
+                      node.data && node.data.internal === "true"
+                        ? {
+                            color: "red"
+                          }
+                        : {}
+                };
+              }}
+              isVirtualized={true}
+            />
+          </div>
+          
+        </div>
+      </TabPanel>
+      <Dialog onClose={this.handleModalClose} aria-labelledby="customized-dialog-title" open={open}>
+        <DialogTitle id="customized-dialog-title" onClose={this.handleModalClose}>
+          {modalTitle}
+        </DialogTitle>
+        <DialogContent dividers>
+          {/* <FormControl className="formControl">
+            <InputLabel id="demo-simple-select-label">Service</InputLabel>
+            <Select
+              labelId="demo-simple-select-label"
+              id="select-service"
+              value={currBit.service}
+              onChange={this.handleServiceChange}
+            >
+              {services}
+            </Select>
+          </FormControl> */}
+
+          <Autocomplete
+            value={currBit.service}
+            onChange={this.handleService2Change}
+            filterOptions={(options, params) => {
+              const filtered = filter(options, params);
+
+              // Suggest the creation of a new value
+              if (params.inputValue !== '') {
+                filtered.push({
+                  inputValue: params.inputValue,
+                  title: `Add "${params.inputValue}"`,
+                });
+              }
+
+              return filtered;
+            }}
+            selectOnFocus
+            clearOnBlur
+            handleHomeEndKeys
+            id="service-autocomplete"
+            options={services}
+            getOptionLabel={(option) => {
+              // Value selected with enter, right from the input
+              if (typeof option === 'string') {
+                return option;
+              }
+              // Add "xxx" option created dynamically
+              if (option.inputValue) {
+                return option.inputValue;
+              }
+              // Regular option
+              return option.title;
+            }}
+            renderOption={(option) => option.title}
+            freeSolo
+            renderInput={(params) => (
+              <TextField {...params} label="Service *" />
+            )}
+          />
+
+          {/* <TextField className="formControl" id="input-category" label="Category" value={currBit.category} onChange={this.handleCategoryChange} /> */}
+          
+          <Autocomplete
+            value={currBit.category}
+            onChange={this.handleCategory2Change}
+            filterOptions={(options, params) => {
+              const filtered = filter(options, params);
+
+              // Suggest the creation of a new value
+              if (params.inputValue !== '') {
+                filtered.push({
+                  inputValue: params.inputValue,
+                  title: `Add "${params.inputValue}"`,
+                });
+              }
+
+              return filtered;
+            }}
+            selectOnFocus
+            clearOnBlur
+            handleHomeEndKeys
+            id="free-solo-with-text-demo"
+            options={categories}
+            getOptionLabel={(option) => {
+              // Value selected with enter, right from the input
+              if (typeof option === 'string') {
+                return option;
+              }
+              // Add "xxx" option created dynamically
+              if (option.inputValue) {
+                return option.inputValue;
+              }
+              // Regular option
+              return option.title;
+            }}
+            renderOption={(option) => option.title}
+            freeSolo
+            renderInput={(params) => (
+              <TextField {...params} label="Category *" />
+            )}
+          />
+          
+          <TextField className="formControl" id="input-title" label="Title *" value={currBit.name} onChange={this.handleTitleChange} />
+          <FormControlLabel
+            control={<Switch checked={currBit.internal === "true"} onChange={this.toggleInternal} />}
+            label="Internal Only"
+          />
+          <BitEditor/>
+        </DialogContent>
+        <DialogActions>
+          <Button autoFocus onClick={this.handleModalSave} color="primary">
+            Save changes
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </div>
+      
     );
   }
 }
