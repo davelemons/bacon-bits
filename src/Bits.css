@@ -25,6 +25,14 @@ html,
   height: calc(100vh - 200px);
 }
 
+#simple-tabpanel-0{
+  height: calc(100vh - 200px);
+}
+
+#simple-tabpanel-1{
+  height: calc(100vh - 200px);
+}
+
 .next,
 .previous {
   margin-right: 5px !important;
@@ -59,6 +67,21 @@ html,
   border: 1px solid #909090;
   margin-bottom: 5px !important;
   border-radius: 4px;
+}
+
+.internalNode {
+  background-color: LightCoral !important;
+  color: white !important;
+  font-weight: bold !important;
+}
+
+.internalNode > div > span {
+  color: white !important;
+  font-weight: bold !important;
+}
+
+.internalNode > div > p {
+  color: white !important;
 }
 
 .MuiListItemText-root{

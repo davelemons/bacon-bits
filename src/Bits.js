@@ -1,5 +1,5 @@
 import React, { Component }  from 'react';
-import { API } from "aws-amplify"
+import { API, navItem } from "aws-amplify"
 import SortableTree, { toggleExpandedForAll }  from 'react-sortable-tree';
 import 'react-sortable-tree/style.css';
 import { withStyles, makeStyles } from '@material-ui/core/styles';
@@ -143,7 +143,7 @@ export default class Bits extends Component {
         category: '',
         name: '',
         content:'',
-        internal: false
+        internal: "false"
       },
       adding: false,
       editing: false,
@@ -252,7 +252,7 @@ export default class Bits extends Component {
               var items = children[property2]
               items.forEach(element => {
                 categoryNode.children.push({
-                  title: element.internal ? element.name + ' (INTERNAL)' : element.name,
+                  title: element.internal === "true" ? element.name + ' (INTERNAL)' : element.name,
                   service: element.service,
                   subtitle:`${element.service} - ${element.category}`,
                   id: element.id,
@@ -398,7 +398,8 @@ export default class Bits extends Component {
 
   toggleInternal = (event) => {
     var currBit = this.state.currBit;
-    currBit.internal = !currBit.internal;
+    if (currBit.internal === "true") currBit.internal = "false"
+    else currBit.internal = "false"
     this.setState({
       currBit
     });
@@ -425,7 +426,7 @@ export default class Bits extends Component {
         category: '',
         name: '',
         content:'',
-        internal: false
+        internal: "false"
       }
     });
   };
@@ -532,87 +533,68 @@ export default class Bits extends Component {
   };
 
   handleHitClick = (hit) => {
+    //Need to remap CloudSearch arrays to just strings
     console.log(hit);
-    // if(!node.children){ //No Selecting Root Nodes
-    //   const context = this.context;
-    //   var selectedBits = context.selectedBits;
-    //   console.log(node);
-    //   if (node.selected) {
-    //     //Remove from selected
-    //     selectedBits = selectedBits.filter(function(item) {
-    //       return item.id !== node.id;
-    //     });
-    //     node.selected = false;
-    //   } else {
-    //     //add to selected
-    //     selectedBits.push(node);
-    //     node.selected = true;
-        
-    //     Analytics.record( 
-    //       {
-    //         name: 'bitSelected' , 
-    //         'Endpoint' : this.context.user,
-    //         attributes:{
-    //           bitId: node.id, 
-    //           Timestamp: new Date().toISOString(), 
-    //           ChannelType: 'EMAIL', 
-    //           Address: this.context.user
-    //         },
-    //     }); 
+    var node = {
+      id: hit.id[0],
+      selected: false,
+      service: hit.service[0],
+      subtitle: `${hit.service[0]} - ${hit.category[0]}`,
+      title: hit.internal && hit.internal[0] === "true" ? hit.name[0] + ' (INTERNAL)' : hit.name[0],
+      expanded: false,
+      data:{
+        category: hit.category[0],
+        content: hit.content[0],
+        id: hit.id[0],
+        name: hit.name[0],
+        service: hit.service[0],
+        internal: hit.internal && hit.internal[0],
+        createdby: hit.createdby && hit.createdby[0] ? hit.createdby[0] : "",
+        modifiedby: hit.modifiedby && hit.modifiedby[0] ? hit.modifiedby[0] : ""
+      }
+    }
 
-    //     if (node.data && node.data.internal){
-    //       this.props.addNotification({
-    //         message: 'You selected a bit with Internal content. Proceed with caution!',
-    //         level: 'warning'
-    //       });
-    //     }
-    //   }
-    //   context.setSelectedBits(selectedBits);
-    // }
-    
-  };
+    this.handleNodeClick(node);
+  }
 
   handleNodeClick = (node) => {
     if(!node.children){ //No Selecting Root Nodes
       const context = this.context;
       var selectedBits = context.selectedBits;
-      console.log(node);
-      if (node.selected) {
-        console.log(1);
-        //Remove from selected
-        selectedBits = selectedBits.filter(function(item) {
-          return item.id !== node.id;
-        });
-        node.selected = false;
-      } else {
 
-        console.log(2);
+      var found = false
+      selectedBits.forEach(bit => {
+        if (bit.id === node.id){
+          found = true;
+        }
+      });
+
+      if (!found) {
         //add to selected
         selectedBits.push(node);
-        node.selected = true;
-        
-        Analytics.record( 
-          {
-            name: 'bitSelected' , 
-            'Endpoint' : this.context.user,
-            attributes:{
-              bitId: node.id, 
-              Timestamp: new Date().toISOString(), 
-              ChannelType: 'EMAIL', 
-              Address: this.context.user
-            },
-        }); 
+    
+        // Analytics.record( 
+        //   {
+        //     name: 'bitSelected' , 
+        //     'Endpoint' : this.context.user,
+        //     attributes:{
+        //       bitId: node.id, 
+        //       Timestamp: new Date().toISOString(), 
+        //       ChannelType: 'EMAIL', 
+        //       Address: this.context.user
+        //     },
+        // }); 
 
-        if (node.data && node.data.internal){
+        if (node.data && node.data.internal === "true"){
           this.props.addNotification({
             message: 'You selected a bit with Internal content. Proceed with caution!',
             level: 'warning'
           });
         }
+        context.setSelectedBits(selectedBits);
       }
-      context.setSelectedBits(selectedBits);
+      
     }
-    
   };
 
   render() {
@@ -655,16 +637,11 @@ export default class Bits extends Component {
      
           <List dense={true}>
             {searchHits.map((value) => {
-              const labelId = `checkbox-list-label-${value.id}`;
-
+              const labelId = `list-label-${value.id}`;
+              //Dear Future Dave: you need to figure out how to convert all Search Hits, to a node while converting dumb string arrays to strings
               return (
-                <ListItem key={value.id} role={undefined} dense button  onClick={() => this.handleNodeClick({
-                  title: value.fields.internal ? value.fields.name[0] + ' (INTERNAL)' : value.fields.name[0],
-                  service: value.fields.service[0],
-                  subtitle:`${value.fields.service[0]} - ${value.fields.category[0]}`,
-                  id: value.id, 
-                  data: value.fields})}>
-                  <ListItemText id={labelId} primary={value.fields.name} secondary={`${value.fields.service} - ${value.fields.category}`} />
+                <ListItem key={value.id} role={undefined} dense button  onClick={() => this.handleHitClick(value.fields)} className={value.fields.internal && value.fields.internal[0] === "true" ? 'internalNode' : ''}>
+                  <ListItemText id={labelId} primary={ value.fields.internal && value.fields.internal[0] === "true" ? value.fields.name[0] + ' (INTERNAL)' : value.fields.name[0]  } secondary={`${value.fields.service[0]} - ${value.fields.category[0]}`} />
                   <ListItemSecondaryAction>
                       {this.context.isAdmin ? (
                           <button
@@ -694,7 +671,7 @@ export default class Bits extends Component {
                       <HtmlTooltip
                             title={
                               <React.Fragment>
-                                {htmlToReactParser.parse(`${value.fields.content}<span style="font-size:10px;color:#505050"><hr />Created By: ${value.fields.createdBy || ''} Last Modified By: ${value.fields.modifiedBy || ''}</span>`)}
+                                {htmlToReactParser.parse(`${value.fields.content[0]}<span style="font-size:10px;color:#505050"><hr />Created By: ${value.fields.createdby && value.fields.createdby[0] ? value.fields.createdby[0] : ''} Last Modified By: ${value.fields.modifiedby && value.fields.modifiedby[0] ? value.fields.modifiedby[0] : ''}</span>`)}
                               </React.Fragment>
                             }
                             interactive
@@ -829,18 +806,7 @@ export default class Bits extends Component {
                     }
                   },
                   style:
-                    node.selected && node.data && node.data.internal
-                      ? {
-                          border: "4px solid #707070",
-                          color: "red"
-                        }
-                      :
-                      node.selected
-                        ? {
-                            border: "4px solid #707070"
-                          }
-                      :
-                      node.data && node.data.internal
+                      node.data && node.data.internal === "true"
                         ? {
                             color: "red"
                           }
@@ -954,7 +920,7 @@ export default class Bits extends Component {
           
           <TextField className="formControl" id="input-title" label="Title *" value={currBit.name} onChange={this.handleTitleChange} />
           <FormControlLabel
-            control={<Switch checked={currBit.internal} onChange={this.toggleInternal} />}
+            control={<Switch checked={currBit.internal === "true"} onChange={this.toggleInternal} />}
             label="Internal Only"
           />
           <BitEditor/>

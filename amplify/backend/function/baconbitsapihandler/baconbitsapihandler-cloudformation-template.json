@@ -17,6 +17,12 @@
     "storagebaconbitsdynamodbArn": {
       "Type": "String",
       "Default": "storagebaconbitsdynamodbArn"
+    },
+    "deploymentBucketName": {
+      "Type": "String"
+    },
+    "s3Key": {
+      "Type": "String"
     }
   },
   "Conditions": {
@@ -78,8 +84,12 @@
         "Layers": [],
         "Timeout": "25",
         "Code": {
-          "S3Bucket": "amplify-baconbits-dev-93704-deployment",
-          "S3Key": "amplify-builds/baconbitsapihandler-31326b774d4864374735-build.zip"
+          "S3Bucket": {
+            "Ref": "deploymentBucketName"
+          },
+          "S3Key": {
+            "Ref": "s3Key"
+          }
         }
       }
     },
