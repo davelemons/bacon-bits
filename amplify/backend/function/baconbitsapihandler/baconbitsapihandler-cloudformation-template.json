@@ -70,7 +70,8 @@
             "REGION": {
               "Ref": "AWS::Region"
             },
-            "SNS_ARN": "arn:aws:sns:us-east-1:365414534056:BaconBitsNotifications"
+            "SNS_ARN": "arn:aws:sns:us-east-1:365414534056:BaconBitsNotifications",
+            "CLOUD_SEARCH_DOMAIN": "baconbits-xfssyjabaqeecsgczi3nne2634.us-east-1.cloudsearch.amazonaws.com"
           }
         },
         "Role": {

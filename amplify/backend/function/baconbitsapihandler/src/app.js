@@ -17,6 +17,8 @@ var express = require('express')
 AWS.config.update({ region: process.env.TABLE_REGION });
 
 const dynamodb = new AWS.DynamoDB.DocumentClient();
+const csd = new AWS.CloudSearchDomain({endpoint: `search-${process.env.CLOUD_SEARCH_DOMAIN}`});
+const csdd = new AWS.CloudSearchDomain({endpoint: `doc-${process.env.CLOUD_SEARCH_DOMAIN}`});
 
 
 let tableName = "baconbitsdynamodb";
@@ -29,11 +31,16 @@ const partitionKeyName = "id";
 const partitionKeyType = "S";
 const sortKeyName = "service";
 const sortKeyType = "S";
+const queryName = "query";
+const queryType = "S";
 const hasSortKey = sortKeyName !== "";
 const path = "/bits";
+const searchPath = "/search";
 const UNAUTH = 'UNAUTH';
 const hashKeyPath = '/:' + partitionKeyName;
 const sortKeyPath = hasSortKey ? '/:' + sortKeyName : '';
+const queryPath = '/:' + queryName;
+
 // declare a new express app
 var app = express()
 app.use(bodyParser.json())
@@ -85,6 +92,39 @@ app.get(path, function(req, res) {
     res.statusCode = 500;
     res.json({error: 'Could not load items: ' + e});
   });
+
+});
+
+
+/********************************
+ * HTTP Get method for search   *
+ ********************************/
+
+app.get(path + searchPath + queryPath, function(req, res) {
+  var query;
+
+  try {
+      query = convertUrlType(req.params[queryName], queryType);
+      console.log('Query: ',query);
+
+      var params = {
+        query: query /* required */
+      };
+      
+      csd.search(params, function (err, data) {
+          if (err) { 
+            console.log(err, err.stack); // an error occurred
+            res.statusCode = 500;
+            res.json({error: 'Error returned from CloudSearch' + err});
+          } else {
+            console.log(data);           // successful response
+            res.json(data);
+          }
+        });
+    } catch(err) {
+      res.statusCode = 500;
+      res.json({error: 'Unhandled error from CloudSearch ' + err});
+    }
 
 });
 
@@ -194,29 +234,56 @@ app.put(path, function(req, res) {
       res.statusCode = 500;
       res.json({error: err, url: req.url, body: req.body});
     } else{
-      res.json({success: 'put call succeed!', url: req.url, data: data})
+      
 
-      //Send SNS notification
-      if(process.env.SNS_ARN){
-        // Create publish parameters
-        var params = {
-          Message: `A Bacon Bit was created/updated in ${process.env.ENV}!\n\n${JSON.stringify(req.body,null,2)}`, /* required */
-          TopicArn: process.env.SNS_ARN
-        };
+      //Update CloudSearch
+      req.body.createdby = req.body.createdBy;
+      req.body.modifiedby = req.body.modifiedBy;
+      delete req.body.createdBy;
+      delete req.body.modifiedBy;
 
-        // Create promise and SNS service object
-        var publishTextPromise = new AWS.SNS({apiVersion: '2010-03-31'}).publish(params).promise();
+      var documentsBatch = []
+      var document = {}; 
+      document.id = `${req.body.id}_${req.body.service}`; 
+      document.type = 'add'; 
+      document.fields = req.body; 
+      documentsBatch.push(document); 
+      var params = { contentType: 'application/json', documents:JSON.stringify(documentsBatch) }; 
+    
+      console.log(params);
 
-        // Handle promise's fulfilled/rejected states
-        publishTextPromise.then(
-          function(data) {
-            console.log(`Message ${params.Message} sent to the topic ${params.TopicArn}`);
-            console.log("MessageID is " + data.MessageId);
-          }).catch(
-            function(err) {
-            console.error(err, err.stack);
-          });
-      }
+      csdd.uploadDocuments(params, function(err, data) { 
+    
+       if(err) {
+          console.log(err.stack);
+          res.statusCode = 500;
+          res.json({error: err, url: req.url});
+       }else{
+          console.log('document uploaded successfully',data);
+          res.json({success: 'put call succeed!', url: req.url, data: data})
+          //Send SNS notification
+          if(process.env.SNS_ARN){
+            // Create publish parameters
+            var params = {
+              Message: `A Bacon Bit was created/updated in ${process.env.ENV}!\n\n${JSON.stringify(req.body,null,2)}`, /* required */
+              TopicArn: process.env.SNS_ARN
+            };
+
+            // Create promise and SNS service object
+            var publishTextPromise = new AWS.SNS({apiVersion: '2010-03-31'}).publish(params).promise();
+
+            // Handle promise's fulfilled/rejected states
+            publishTextPromise.then(
+              function(data) {
+                console.log(`Message ${params.Message} sent to the topic ${params.TopicArn}`);
+                console.log("MessageID is " + data.MessageId);
+              }).catch(
+                function(err) {
+                console.error(err, err.stack);
+              });
+          }
+       }
+      }); 
     }
   });
 });
@@ -296,6 +363,9 @@ app.delete(path + '/object' + hashKeyPath + sortKeyPath, function(req, res) {
     }
   }
 
+  csID = `${params[partitionKeyName]}_${params[sortKeyName]}`;
+  console.log(csID);
+
   let removeItemParams = {
     TableName: tableName,
     Key: params
@@ -305,7 +375,28 @@ app.delete(path + '/object' + hashKeyPath + sortKeyPath, function(req, res) {
       res.statusCode = 500;
       res.json({error: err, url: req.url});
     } else {
-      res.json({url: req.url, data: data});
+
+      var documentsBatch = []
+      var document = {}; 
+      document.id = csID; 
+      document.type = 'delete'; 
+      documentsBatch.push(document); 
+      var csParams = { contentType: 'application/json', documents:JSON.stringify(documentsBatch) }; 
+
+      console.log(csParams);
+    
+      csdd.uploadDocuments(csParams, function(err, data) { 
+    
+       if(err) {
+        console.log(err.stack);
+        res.statusCode = 500;
+        res.json({error: err, url: req.url});
+       }else{
+        console.log('document deleted successfully',data);
+        res.json({url: req.url, data: data});
+       }
+      }); 
+      
     }
   });
 });
