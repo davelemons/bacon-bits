@@ -37,7 +37,10 @@
         "baconbits3f66546a": {}
       },
       "function": {
-        "baconbitsapihandler": {}
+        "baconbitsapihandler": {
+          "deploymentBucketName": "amplify-baconbits-prod-145007-deployment",
+          "s3Key": "amplify-builds/baconbitsapihandler-727364473775486e3170-build.zip"
+        }
       }
     }
   }
