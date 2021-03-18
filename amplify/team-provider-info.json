@@ -42,7 +42,7 @@
       "function": {
         "baconbitsapihandler": {
           "deploymentBucketName": "amplify-baconbits-prod-145007-deployment",
-          "s3Key": "amplify-builds/baconbitsapihandler-727364473775486e3170-build.zip"
+          "s3Key": "amplify-builds/baconbitsapihandler-554c7058314d734e3570-build.zip"
         }
       }
     }

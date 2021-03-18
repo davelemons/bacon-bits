@@ -109,7 +109,7 @@ function App() {
           </Grid>
           <Grid item xs={4}>
             <Paper className={classes.paper}>
-              <BitSorter/>
+              <BitSorter addNotification={addNotification}/>
             </Paper>
           </Grid>
           <Grid item xs={3}>
