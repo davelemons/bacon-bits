@@ -12,7 +12,7 @@ import PropTypes from 'prop-types';
 import Tooltip from '@material-ui/core/Tooltip';
 import BitsContext from './BitsContext';
 import BitEditor from './BitEditor';
-import { SkipPrevious, SkipNext, ExpandLess, ExpandMore, Settings, Info, Add, Close, Delete } from '@material-ui/icons';
+import { SkipPrevious, SkipNext, ExpandLess, ExpandMore, Settings, Info, Add, Close, Delete, Bookmark } from '@material-ui/icons';
 import './Bits.css';
 import draftToHtml from 'draftjs-to-html';
 import { convertToRaw } from 'draft-js';
@@ -207,7 +207,19 @@ export default class Bits extends Component {
     this.context.clearBitEditorState();
   };
 
+  getQueryVariable(variable)
+  {
+    var query = window.location.search.substring(1);
+    var vars = query.split("&");
+    for (var i=0;i<vars.length;i++) {
+      var pair = vars[i].split("=");
+      if(pair[0] == variable){return pair[1];}
+    }
+    return(false);
+  }
+
   fetchBits = () => {
+
     this.props.toggleLoader();
     API
     .get(apiName, '/bits/')
@@ -272,6 +284,7 @@ export default class Bits extends Component {
         services: services,
         categories: categories
       });
+
       this.props.toggleLoader();
     })
     .catch(error => {
@@ -285,6 +298,23 @@ export default class Bits extends Component {
       this.context.setUser(user);
     })
     .catch(err => console.log(err));
+
+    //We have a search value in querystring...let's search.
+    var searchString = this.getQueryVariable("search")
+    if (searchString){
+      API
+      .get(apiName, `/bits/search/${searchString}`)
+      .then(response => {
+        console.log(response);
+        this.setState({
+          searchHits: response.hits.hit
+        });
+      })
+      .catch(error => {
+        console.log(error);
+      });
+    }
+
     this.fetchBits()
   }
 
@@ -431,6 +461,28 @@ export default class Bits extends Component {
     });
   };
 
+  handleCreateLinkClick = (id) => {
+    console.log('handleCreateLinkClick: ', id);
+    var self = this;
+
+    var link = `${window.location.origin}?search=${id}`;
+
+    navigator.clipboard.writeText(link).then(
+      () => {
+        self.props.addNotification({
+          message: 'Copied Link to Clipboard',
+          level: 'success'
+        });
+      },
+      error => {
+        self.props.addNotification({
+          message: 'There was an error copying Link to clipboard',
+          level: 'error'
+        });
+      }
+    );
+  };
+
   handleDeleteClick = (node) => {
     console.log('Delete Bit');
     var self = this;
@@ -573,17 +625,17 @@ export default class Bits extends Component {
         //add to selected
         selectedBits.push(node);
     
-        // Analytics.record( 
-        //   {
-        //     name: 'bitSelected' , 
-        //     'Endpoint' : this.context.user,
-        //     attributes:{
-        //       bitId: node.id, 
-        //       Timestamp: new Date().toISOString(), 
-        //       ChannelType: 'EMAIL', 
-        //       Address: this.context.user
-        //     },
-        // }); 
+        Analytics.record( 
+          {
+            name: 'bitSelected' , 
+            'Endpoint' : this.context.user,
+            attributes:{
+              bitId: node.id, 
+              Timestamp: new Date().toISOString(), 
+              ChannelType: 'EMAIL', 
+              Address: this.context.user
+            },
+        }); 
 
         if (node.data && node.data.internal === "true"){
           this.props.addNotification({
@@ -620,6 +672,10 @@ export default class Bits extends Component {
       node.data.content.toLowerCase().indexOf(searchQuery.toLowerCase()) > -1);
     }
 
+    const ButtonInTabs = ({ className, onClick, children }) => {
+      return <Button className={className} style={{color: "white"}} onClick={onClick} children={children} />;
+    };
+
     // const services = this.state.services.map((service) =>
     //     <MenuItem value={service}>{service}</MenuItem>
     // );
@@ -630,6 +686,12 @@ export default class Bits extends Component {
         <Tabs value={currTab} onChange={this.handleTabChange} aria-label="simple tabs example">
           <Tab label="Search" {...a11yProps(0)} />
           <Tab label="Browse" {...a11yProps(1)} />
+          {this.context.isAdmin ? (
+            <ButtonInTabs onClick={() => this.handleAddClick(false)}>
+              <Add color="secondary" />
+              New Bacon Bit
+            </ButtonInTabs>
+          ) : (null)}
         </Tabs>
       </AppBar>
       <TabPanel value={currTab} index={0}>
@@ -668,6 +730,17 @@ export default class Bits extends Component {
                                 <Settings fontSize="small" color="primary"/>
                               </button>
                       ) : (null)}
+                      <button
+                            className="btn btn-outline-success"
+                            title="Copy Link"
+                            style={{
+                              verticalAlign: "middle",
+                              marginLeft: "5px"
+                            }}
+                            onClick={() => this.handleCreateLinkClick(value.fields.id[0])}
+                          >
+                            <Bookmark fontSize="small" color="primary"/>
+                      </button>
                       <HtmlTooltip
                             title={
                               <React.Fragment>
@@ -713,14 +786,6 @@ export default class Bits extends Component {
             >
               <ExpandLess />
             </Button>
-            {this.context.isAdmin ? (
-              <Button
-                className="addBit" variant="contained" title="Add New Bacon Bit" 
-                onClick={this.handleAddClick.bind(this, false)}
-              >
-                <Add />
-              </Button>
-            ) : (null)}
           </div>
           <div className="tree-wrapper">
             <SortableTree

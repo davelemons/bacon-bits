@@ -12,7 +12,7 @@ import { withStyles, makeStyles } from '@material-ui/core/styles';
 import Tooltip from '@material-ui/core/Tooltip';
 import BitsContext from './BitsContext';
 import './BitSorter.css';
-import { Info } from '@material-ui/icons';
+import { Info, Bookmark } from '@material-ui/icons';
 const HtmlToReactParser = require('html-to-react').Parser;
 const htmlToReactParser = new HtmlToReactParser();
 
@@ -50,6 +50,29 @@ export default class BitSorter extends Component {
       });
       this.context.setSelectedBits(selectedBits);
     };
+
+    
+    const handleCreateLinkClick = (id) => {
+      console.log('handleCreateLinkClick: ', id);
+      var self = this;
+  
+      var link = `${window.location.origin}?search=${id}`;
+  
+      navigator.clipboard.writeText(link).then(
+        () => {
+          self.props.addNotification({
+            message: 'Copied Link to Clipboard',
+            level: 'success'
+          });
+        },
+        error => {
+          self.props.addNotification({
+            message: 'There was an error copying Link to clipboard',
+            level: 'error'
+          });
+        }
+      );
+    };
     
     return (
       <List>
@@ -73,6 +96,19 @@ export default class BitSorter extends Component {
                       >
                         <UndoIcon fontSize="small" color="primary"/>
                       </button>
+
+                      <button
+                            className="btn btn-outline-success"
+                            title="Copy Link"
+                            style={{
+                              verticalAlign: "middle",
+                              marginLeft: "5px"
+                            }}
+                            onClick={() => handleCreateLinkClick(id)}
+                          >
+                            <Bookmark fontSize="small" color="primary"/>
+                      </button>
+
                       <HtmlTooltip
                             title={
                               <React.Fragment>
