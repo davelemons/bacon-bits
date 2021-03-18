@@ -1,3 +1,4 @@
+//Dear Future Developer:  This component is a mess...please don't judge me.  It really needs to be busted up into smaller components and I apologize -Dave
 import React, { Component }  from 'react';
 import { API, navItem } from "aws-amplify"
 import SortableTree, { toggleExpandedForAll }  from 'react-sortable-tree';
@@ -13,6 +14,7 @@ import Tooltip from '@material-ui/core/Tooltip';
 import BitsContext from './BitsContext';
 import BitEditor from './BitEditor';
 import { SkipPrevious, SkipNext, ExpandLess, ExpandMore, Settings, Info, Add, Close, Delete, Bookmark } from '@material-ui/icons';
+import CircularProgress from '@material-ui/core/CircularProgress'
 import './Bits.css';
 import draftToHtml from 'draftjs-to-html';
 import { convertToRaw } from 'draft-js';
@@ -148,7 +150,8 @@ export default class Bits extends Component {
       adding: false,
       editing: false,
       categories: [{title: '2-WAY SMS'},{title: 'COMPLIANCE'}],
-      currTab: 0
+      currTab: 0,
+      searching: false
     };
   }
 
@@ -173,19 +176,25 @@ export default class Bits extends Component {
   };  
 
   debouncedSearch = _.debounce(function (query) {
-    console.log("Search: ",query)  
+    this.setState({
+      searching: true
+    })
     API
     .get(apiName, `/bits/search/${query}`)
     .then(response => {
       console.log(response);
       this.setState({
-        searchHits: response.hits.hit
+        searchHits: response.hits.hit,
+        searching: false
       });
     })
     .catch(error => {
       console.log(error);
+      this.setState({
+        searching: false
+      })
     });
-  }, 500);
+  }, 400);
 
   handleKeyDown = e => {
     //TODO: For some reason this isn't forcing a search.
@@ -661,7 +670,8 @@ export default class Bits extends Component {
       categories,
       services,
       currTab,
-      searchHits
+      searchHits,
+      searching
     } = this.state;
 
     const customSearchMethod = ({  node, path, treeIndex, searchQuery }) => {
@@ -676,9 +686,13 @@ export default class Bits extends Component {
       return <Button className={className} style={{color: "white"}} onClick={onClick} children={children} />;
     };
 
-    // const services = this.state.services.map((service) =>
-    //     <MenuItem value={service}>{service}</MenuItem>
-    // );
+    const SpinnerAdornment = withStyles(styles)(props => (
+      <CircularProgress
+        className={props.classes.spinner}
+        style={{marginLeft: "10px",marginTop: "10px"}}
+        size={20}
+      />
+    ))
     
     return (
       <div>
@@ -695,7 +709,8 @@ export default class Bits extends Component {
         </Tabs>
       </AppBar>
       <TabPanel value={currTab} index={0}>
-        <TextField size="small" placeholder="Search..." variant="outlined" fullWidth onChange={this.handleCloudSearchOnChange}/>
+        <TextField size="small" placeholder="Search..." variant="outlined" fullWidth style={{width: "90%"}} onChange={this.handleCloudSearchOnChange} />
+        {searching && <SpinnerAdornment/>}
      
           <List dense={true}>
             {searchHits.map((value) => {
