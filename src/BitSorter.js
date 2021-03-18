@@ -5,6 +5,7 @@ import List from "@material-ui/core/List";
 import ListItem from "@material-ui/core/ListItem";
 import ListItemIcon from "@material-ui/core/ListItemIcon";
 import ListItemText from "@material-ui/core/ListItemText";
+import { Button } from '@material-ui/core';
 import ListItemSecondaryAction from "@material-ui/core/ListItemSecondaryAction";
 import DragHandleIcon from "@material-ui/icons/DragHandle";
 import UndoIcon from "@material-ui/icons/Undo";
@@ -51,6 +52,10 @@ export default class BitSorter extends Component {
       this.context.setSelectedBits(selectedBits);
     };
 
+    const handleClearClick = () => {
+      this.context.setSelectedBits([]);
+    };
+
     
     const handleCreateLinkClick = (id) => {
       console.log('handleCreateLinkClick: ', id);
@@ -75,66 +80,71 @@ export default class BitSorter extends Component {
     };
     
     return (
-      <List>
-      <Container dragHandleSelector=".drag-handle" lockAxis="y" onDrop={onDrop}>
-        {this.context.selectedBits.map(({ id, title, subtitle, data }) => (
-          <Draggable key={id}>
-            <ListItem dense  className={data.internal && data.internal === "true" ? 'internalNode' : ''}>
-              <ListItemIcon className="drag-handle">
-              <DragHandleIcon />
-              </ListItemIcon>
-              <ListItemText primary={title} secondary={subtitle} />
-                  <ListItemSecondaryAction>
-                      <button
-                        className="btn btn-outline-success"
-                        title="Deselect Bacon Bit"
-                        style={{
-                          verticalAlign: "middle",
-                          marginLeft: "5px"
-                        }}
-                        onClick={() => handleUndoClick({data})}
-                      >
-                        <UndoIcon fontSize="small" color="primary"/>
-                      </button>
+      <div>
+        {this.context.selectedBits.length ? (
+          <Button className="button" variant="contained" style={{width: "100%"}} onClick={handleClearClick}>Clear All Bits</Button>
+        ) : (null)}
+        <List>
+        <Container dragHandleSelector=".drag-handle" lockAxis="y" onDrop={onDrop}>
+          {this.context.selectedBits.map(({ id, title, subtitle, data }) => (
+            <Draggable key={id}>
+              <ListItem dense  className={data.internal && data.internal === "true" ? 'internalNode' : ''}>
+                <ListItemIcon className="drag-handle">
+                <DragHandleIcon />
+                </ListItemIcon>
+                <ListItemText primary={title} secondary={subtitle} />
+                    <ListItemSecondaryAction>
+                        <button
+                          className="btn btn-outline-success"
+                          title="Deselect Bacon Bit"
+                          style={{
+                            verticalAlign: "middle",
+                            marginLeft: "5px"
+                          }}
+                          onClick={() => handleUndoClick({data})}
+                        >
+                          <UndoIcon fontSize="small" color="primary"/>
+                        </button>
 
-                      <button
-                            className="btn btn-outline-success"
-                            title="Copy Link"
-                            style={{
-                              verticalAlign: "middle",
-                              marginLeft: "5px"
-                            }}
-                            onClick={() => handleCreateLinkClick(id)}
-                          >
-                            <Bookmark fontSize="small" color="primary"/>
-                      </button>
-
-                      <HtmlTooltip
-                            title={
-                              <React.Fragment>
-                                {htmlToReactParser.parse(`${data.content}<span style="font-size:10px;color:#505050"><hr />Created By: ${data.createdby || data.createdBy} Last Modified By: ${data.modifiedby || data.modifiedBy}</span>`)}
-                              </React.Fragment>
-                            }
-                            interactive
-                            arrow
-                            placement="right"
-                          >
-                            <button
+                        <button
                               className="btn btn-outline-success"
+                              title="Copy Link"
                               style={{
                                 verticalAlign: "middle",
                                 marginLeft: "5px"
                               }}
+                              onClick={() => handleCreateLinkClick(id)}
                             >
-                              <Info fontSize="small" color="primary"/>
-                            </button>
-                        </HtmlTooltip>
-                  </ListItemSecondaryAction>
-            </ListItem>
-          </Draggable>
-        ))}
-      </Container>
-    </List>
+                              <Bookmark fontSize="small" color="primary"/>
+                        </button>
+
+                        <HtmlTooltip
+                              title={
+                                <React.Fragment>
+                                  {htmlToReactParser.parse(`${data.content}<span style="font-size:10px;color:#505050"><hr />Created By: ${data.createdby || data.createdBy} Last Modified By: ${data.modifiedby || data.modifiedBy}</span>`)}
+                                </React.Fragment>
+                              }
+                              interactive
+                              arrow
+                              placement="right"
+                            >
+                              <button
+                                className="btn btn-outline-success"
+                                style={{
+                                  verticalAlign: "middle",
+                                  marginLeft: "5px"
+                                }}
+                              >
+                                <Info fontSize="small" color="primary"/>
+                              </button>
+                          </HtmlTooltip>
+                    </ListItemSecondaryAction>
+              </ListItem>
+            </Draggable>
+          ))}
+        </Container>
+      </List>
+    </div>
     );
   }
 }
