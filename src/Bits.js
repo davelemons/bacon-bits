@@ -438,7 +438,7 @@ export default class Bits extends Component {
   toggleInternal = (event) => {
     var currBit = this.state.currBit;
     if (currBit.internal === "true") currBit.internal = "false"
-    else currBit.internal = "false"
+    else if(currBit.internal === "false") currBit.internal = "true"
     this.setState({
       currBit
     });
