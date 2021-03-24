@@ -264,8 +264,9 @@ app.put(path, function(req, res) {
           //Send SNS notification
           if(process.env.SNS_ARN){
             // Create publish parameters
+            req.body.env = process.env.ENV;
             var params = {
-              Message: `A Bacon Bit was created/updated in ${process.env.ENV}!\n\n${JSON.stringify(req.body,null,2)}`, /* required */
+              Message: JSON.stringify(req.body,null,2),
               TopicArn: process.env.SNS_ARN
             };
 
@@ -315,8 +316,9 @@ app.post(path, function(req, res) {
       //Send SNS notification
       if(process.env.SNS_ARN){
         // Create publish parameters
+        req.body.env = process.env.ENV;
         var params = {
-          Message: `A Bacon Bit was created/updated in ${process.env.ENV}!\n\n${JSON.stringify(req.body,null,2)}`, /* required */
+          Message: JSON.stringify(req.body,null,2),
           TopicArn: process.env.SNS_ARN
         };
 

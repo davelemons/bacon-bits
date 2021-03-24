@@ -87,5 +87,9 @@ html,
 .MuiListItemText-root{
   margin-top: 0 !important;
   margin-bottom: 0 !important;
+  width: 85% !important;
 }
 
+.MuiListItemIcon-root{
+  min-width: 36px !important
+}
