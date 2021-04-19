@@ -12,7 +12,7 @@ exports.handler = async (event, context) => {
     var markdown = turndownService.turndown(bit.content);
     
     const resp = await axios.post(process.env.SLACK_WEBHOOK_URL, {
-        Content: `New Bacon Bit in ${bit.env.toUpperCase()}: \n------------------------------------\n SERVICE: ${bit.service}\nCATEGORY: ${bit.category}\nNAME: ${bit.name}\nLINK: https://${bit.env === 'dev' ? 'dev.' : ''}bcnbitz.com/?search=${bit.id}\n------------------------------------\n${markdown}`
+        Content: `New Bacon Bit in ${bit.env.toUpperCase()}: \n------------------------------------\nAUTHOR: ${bit.modifiedby}\nSERVICE: ${bit.service}\nCATEGORY: ${bit.category}\nNAME: ${bit.name}\nLINK: https://${bit.env === 'dev' ? 'dev.' : ''}bcnbitz.com/?search=${bit.id}\n------------------------------------\n${markdown}`
     });
     
     console.log(resp);

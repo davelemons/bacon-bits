@@ -102,12 +102,12 @@ function App() {
       {/* <div>Hello, {user.username}</div> */}
       <Container className={classes.container} maxWidth="xl">
         <Grid container spacing={1}>
-          <Grid item xs={5}>
+          <Grid item xs={6}>
             <Paper className={classes.paper}>
               <Bits hideLoader={handleClose} toggleLoader={handleToggle} addNotification={addNotification}/>
             </Paper>
           </Grid>
-          <Grid item xs={4}>
+          <Grid item xs={3}>
             <Paper className={classes.paper}>
               <BitSorter addNotification={addNotification}/>
             </Paper>
