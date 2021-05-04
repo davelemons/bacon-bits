@@ -644,6 +644,7 @@ export default class Bits extends Component {
               ChannelType: 'EMAIL', 
               Address: this.context.user
             },
+            immediate: true
         }); 
 
         if (node.data && node.data.internal === "true"){
